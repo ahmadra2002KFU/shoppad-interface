@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ProductCard } from "@/components/ProductCard";
 import { CartView } from "@/components/CartView";
 import { WeeklyOffers } from "@/components/WeeklyOffers";
@@ -14,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Shopping = () => {
   const { totalItems, currentWeight } = useCart();
+  const { language, toggleLanguage, t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const filteredProducts = selectedCategory
@@ -27,13 +29,23 @@ const Shopping = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <ShoppingCart className="w-8 h-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">Smart Cart</h1>
+              <h1 className="text-2xl font-bold text-foreground">{t("smartCart")}</h1>
             </div>
-            {totalItems > 0 && (
-              <Badge variant="default" className="text-base px-4 py-2">
-                {totalItems} items
-              </Badge>
-            )}
+            <div className="flex items-center gap-3">
+              {totalItems > 0 && (
+                <Badge variant="default" className="text-base px-4 py-2">
+                  {totalItems} {t("items")}
+                </Badge>
+              )}
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={toggleLanguage}
+                className="shrink-0"
+              >
+                <Languages className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -50,7 +62,7 @@ const Shopping = () => {
                 variant={selectedCategory === null ? "default" : "outline"}
                 onClick={() => setSelectedCategory(null)}
               >
-                All
+                {t("all")}
               </Button>
               {categories.map((category) => (
                 <Button
@@ -59,7 +71,7 @@ const Shopping = () => {
                   variant={selectedCategory === category ? "default" : "outline"}
                   onClick={() => setSelectedCategory(category)}
                 >
-                  {category}
+                  {t(category.toLowerCase())}
                 </Button>
               ))}
             </div>
@@ -75,9 +87,9 @@ const Shopping = () => {
           <div className="lg:col-span-1">
             <Tabs defaultValue="cart" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-4">
-                <TabsTrigger value="cart">Cart</TabsTrigger>
-                <TabsTrigger value="offers">Offers</TabsTrigger>
-                <TabsTrigger value="map">Map</TabsTrigger>
+                <TabsTrigger value="cart">{t("cart")}</TabsTrigger>
+                <TabsTrigger value="offers">{t("offers")}</TabsTrigger>
+                <TabsTrigger value="map">{t("map")}</TabsTrigger>
               </TabsList>
               
               <TabsContent value="cart" className="mt-0">

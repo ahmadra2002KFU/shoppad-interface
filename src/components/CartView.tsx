@@ -1,5 +1,6 @@
 import { Minus, Plus, Trash2, CreditCard, CheckCircle, XCircle } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -7,6 +8,7 @@ import { useState } from "react";
 
 export function CartView() {
   const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
+  const { t } = useLanguage();
   const [showNFCDialog, setShowNFCDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showFailureDialog, setShowFailureDialog] = useState(false);
@@ -35,10 +37,10 @@ export function CartView() {
     return (
       <Card className="h-full">
         <CardHeader>
-          <CardTitle className="text-foreground">Your Cart</CardTitle>
+          <CardTitle className="text-foreground">{t("cart")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-center py-8">Your cart is empty</p>
+          <p className="text-muted-foreground text-center py-8">{t("emptyCart")}</p>
         </CardContent>
       </Card>
     );
@@ -47,7 +49,7 @@ export function CartView() {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-foreground">Your Cart ({cart.length} items)</CardTitle>
+        <CardTitle className="text-foreground">{t("cart")} ({cart.length} {t("items")})</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 max-h-[600px] overflow-y-auto">
         {cart.map((item) => (
@@ -81,7 +83,7 @@ export function CartView() {
         ))}
         <div className="pt-4 border-t-2 border-primary/20 space-y-4">
           <div className="flex justify-between items-center text-xl font-bold">
-            <span className="text-foreground">Total:</span>
+            <span className="text-foreground">{t("total")}:</span>
             <span className="text-primary">{totalPrice.toFixed(2)} SAR</span>
           </div>
           <Button 
@@ -91,7 +93,7 @@ export function CartView() {
             disabled={cart.length === 0}
           >
             <CreditCard className="mr-2 h-5 w-5" />
-            Checkout
+            {t("checkout")}
           </Button>
         </div>
       </CardContent>
@@ -100,11 +102,11 @@ export function CartView() {
       <Dialog open={showNFCDialog} onOpenChange={setShowNFCDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center text-2xl">Waiting for NFC Card</DialogTitle>
+            <DialogTitle className="text-center text-2xl">{t("waitingForNFC")}</DialogTitle>
             <DialogDescription className="text-center pt-4">
               <div className="flex flex-col items-center gap-4">
                 <CreditCard className="h-24 w-24 text-primary animate-pulse" />
-                <p className="text-lg">Please tap your card on the reader...</p>
+                <p className="text-lg">{t("tapYourCard")}</p>
               </div>
             </DialogDescription>
           </DialogHeader>
@@ -115,12 +117,11 @@ export function CartView() {
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center text-2xl text-green-600">Payment Successful!</DialogTitle>
+            <DialogTitle className="text-center text-2xl text-green-600">{t("paymentSuccessful")}</DialogTitle>
             <DialogDescription className="text-center pt-4">
               <div className="flex flex-col items-center gap-4">
                 <CheckCircle className="h-24 w-24 text-green-600" />
-                <p className="text-lg">Your payment has been processed successfully.</p>
-                <p className="text-sm text-muted-foreground">Thank you for shopping with us!</p>
+                <p className="text-lg">{t("thankYouForShopping")}</p>
               </div>
             </DialogDescription>
           </DialogHeader>
@@ -131,14 +132,13 @@ export function CartView() {
       <Dialog open={showFailureDialog} onOpenChange={setShowFailureDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center text-2xl text-destructive">Payment Failed</DialogTitle>
+            <DialogTitle className="text-center text-2xl text-destructive">{t("paymentFailed")}</DialogTitle>
             <DialogDescription className="text-center pt-4">
               <div className="flex flex-col items-center gap-4">
                 <XCircle className="h-24 w-24 text-destructive" />
-                <p className="text-lg">Unable to process your payment.</p>
-                <p className="text-sm text-muted-foreground">Please try again or use a different card.</p>
+                <p className="text-lg">{t("pleaseTryAgain")}</p>
                 <Button onClick={() => setShowFailureDialog(false)} className="mt-4">
-                  Try Again
+                  {t("tryAgain")}
                 </Button>
               </div>
             </DialogDescription>

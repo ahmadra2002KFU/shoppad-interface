@@ -1,20 +1,23 @@
 import { Tag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-const offers = [
-  { id: 1, title: "Fresh Produce Sale", discount: "30% OFF", description: "All fruits and vegetables" },
-  { id: 2, title: "Kitchen Essentials", discount: "25% OFF", description: "Cookware and utensils" },
-  { id: 3, title: "Clothing Deal", discount: "Buy 2 Get 1 FREE", description: "All apparel items" },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function WeeklyOffers() {
+  const { t } = useLanguage();
+
+  const offers = [
+    { id: 1, titleKey: "freshProduceSale", discount: "30% OFF", descriptionKey: "allFruitsVegetables" },
+    { id: 2, titleKey: "kitchenEssentials", discount: "25% OFF", descriptionKey: "cookwareUtensils" },
+    { id: 3, titleKey: "clothingDeal", discount: "Buy 2 Get 1 FREE", descriptionKey: "allApparelItems" },
+  ];
+
   return (
     <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-foreground">
           <Tag className="text-accent" />
-          Weekly Offers
+          {t("weeklyOffers")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -23,8 +26,8 @@ export function WeeklyOffers() {
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h4 className="font-semibold text-card-foreground">{offer.title}</h4>
-                  <p className="text-sm text-muted-foreground mt-1">{offer.description}</p>
+                  <h4 className="font-semibold text-card-foreground">{t(offer.titleKey)}</h4>
+                  <p className="text-sm text-muted-foreground mt-1">{t(offer.descriptionKey)}</p>
                 </div>
                 <Badge variant="default" className="bg-accent text-accent-foreground shrink-0">
                   {offer.discount}
