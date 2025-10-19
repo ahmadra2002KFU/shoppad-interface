@@ -1,43 +1,97 @@
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProductCard } from "@/components/ProductCard";
 import { CartView } from "@/components/CartView";
 import { WeeklyOffers } from "@/components/WeeklyOffers";
 import { StoreMap } from "@/components/StoreMap";
+import { ScannerPlaceholder } from "@/components/ScannerPlaceholder";
 import { WeightDisplay } from "@/components/WeightDisplay";
+import { products, categories } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Shopping = () => {
-  const navigate = useNavigate();
-  const { currentWeight } = useCart();
+  const { totalItems, currentWeight } = useCart();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const filteredProducts = selectedCategory
+    ? products.filter((p) => p.category === selectedCategory)
+    : products;
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 bg-card border-b border-border shadow-sm">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate("/catalog")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Catalog
-          </Button>
-
-          <h1 className="text-2xl font-bold text-foreground">Shopping View</h1>
-
-          <div className="w-32" />
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ShoppingCart className="w-8 h-8 text-primary" />
+              <h1 className="text-2xl font-bold text-foreground">Smart Cart</h1>
+            </div>
+            {totalItems > 0 && (
+              <Badge variant="default" className="text-base px-4 py-2">
+                {totalItems} items
+              </Badge>
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
-            <CartView />
+      <main className="container mx-auto px-4 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Left Column - Products */}
+          <div className="lg:col-span-2 space-y-4">
+            <ScannerPlaceholder />
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant={selectedCategory === null ? "default" : "outline"}
+                onClick={() => setSelectedCategory(null)}
+              >
+                All
+              </Button>
+              {categories.map((category) => (
+                <Button
+                  key={category}
+                  size="sm"
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  onClick={() => setSelectedCategory(category)}
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
 
+          {/* Right Column - Cart, Offers, Map */}
           <div className="lg:col-span-1">
-            <WeeklyOffers />
-          </div>
-
-          <div className="lg:col-span-1">
-            <StoreMap />
+            <Tabs defaultValue="cart" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="cart">Cart</TabsTrigger>
+                <TabsTrigger value="offers">Offers</TabsTrigger>
+                <TabsTrigger value="map">Map</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="cart" className="mt-0">
+                <CartView />
+              </TabsContent>
+              
+              <TabsContent value="offers" className="mt-0">
+                <WeeklyOffers />
+              </TabsContent>
+              
+              <TabsContent value="map" className="mt-0">
+                <StoreMap />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </main>

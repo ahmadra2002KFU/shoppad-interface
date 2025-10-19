@@ -30,7 +30,7 @@ export function CartView() {
             <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-md" />
             <div className="flex-1">
               <h4 className="font-semibold text-card-foreground">{item.name}</h4>
-              <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
+              <p className="text-sm text-muted-foreground">{item.price.toFixed(2)} SAR</p>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -57,7 +57,7 @@ export function CartView() {
         <div className="pt-4 border-t-2 border-primary/20">
           <div className="flex justify-between items-center text-xl font-bold">
             <span className="text-foreground">Total:</span>
-            <span className="text-primary">${totalPrice.toFixed(2)}</span>
+            <span className="text-primary">{totalPrice.toFixed(2)} SAR</span>
           </div>
         </div>
       </CardContent>

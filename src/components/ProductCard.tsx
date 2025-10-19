@@ -29,7 +29,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <CardContent className="p-4">
         <h3 className="font-semibold text-lg text-card-foreground">{product.name}</h3>
         <p className="text-sm text-muted-foreground">{product.category}</p>
-        <p className="text-2xl font-bold text-primary mt-2">${product.price.toFixed(2)}</p>
+        <p className="text-2xl font-bold text-primary mt-2">{product.price.toFixed(2)} SAR</p>
       </CardContent>
       <CardFooter className="p-4 pt-0">
         <Button onClick={handleAddToCart} className="w-full" variant="default">
