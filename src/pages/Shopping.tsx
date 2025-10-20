@@ -108,7 +108,7 @@ const Shopping = () => {
         </div>
       </main>
 
-      <WeightDisplay weight={currentWeight} />
+      <WeightDisplay calculatedWeight={currentWeight} />
     </div>
   );
 };

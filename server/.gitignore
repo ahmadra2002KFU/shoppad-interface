@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+
+# SSL Certificates (regenerate for each environment)
+ssl/*.pem
+ssl/*.key
+ssl/*.crt
+
+# Logs
+logs/*.log
+
+# Data files
+data/*.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
