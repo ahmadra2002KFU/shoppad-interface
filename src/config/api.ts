@@ -8,10 +8,10 @@ export const API_CONFIG = {
   SERVER_URL: import.meta.env.VITE_SERVER_URL || 'https://localhost:5050',
   
   // Polling interval in milliseconds (how often to fetch weight data)
-  POLL_INTERVAL: 3000, // 3 seconds
-  
+  POLL_INTERVAL: 100, // 0.1 seconds (100ms) for near real-time updates
+
   // Request timeout in milliseconds
-  TIMEOUT: 5000, // 5 seconds
+  TIMEOUT: 2000, // 2 seconds (reduced for faster failure detection)
   
   // Enable/disable weight sensor integration
   ENABLED: true,

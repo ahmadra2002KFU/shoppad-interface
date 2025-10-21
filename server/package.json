@@ -10,7 +10,13 @@
     "generate-certs": "node generate-certs.js",
     "test": "node test-server.js",
     "logs": "node view-logs.js",
-    "clean-logs": "node clean-logs.js"
+    "clean-logs": "node clean-logs.js",
+    "deploy": "bash deploy.sh",
+    "prod:start": "bash production-start.sh",
+    "prod:stop": "pm2 stop shoppad-server",
+    "prod:restart": "pm2 restart shoppad-server",
+    "prod:logs": "pm2 logs shoppad-server",
+    "prod:status": "pm2 status"
   },
   "keywords": [
     "esp32",

@@ -1,4 +1,5 @@
 import https from 'https';
+import http from 'http';
 import fs from 'fs';
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -10,9 +11,9 @@ import config from './config.js';
 import Logger from './logger.js';
 
 /**
- * Production-ready HTTPS server for ESP32/ESP8266 weight data
- * Port: 5050
- * Protocol: HTTPS
+ * Production-ready HTTPS/HTTP server for ESP32/ESP8266 weight data
+ * Port: Configurable (default 5050 for local, dynamic for cloud)
+ * Protocol: HTTPS (local with self-signed) or HTTP (cloud with SSL termination)
  * Data format: JSON with raw weight values
  */
 
@@ -228,35 +229,48 @@ app.use((err, req, res, next) => {
 });
 
 /**
- * Start HTTPS server
+ * Start HTTPS/HTTP server
+ * Uses HTTPS for local development, HTTP for cloud deployment (SSL termination by platform)
  */
 function startServer() {
   try {
-    // Check if SSL certificates exist
-    if (!fs.existsSync(config.ssl.keyPath) || !fs.existsSync(config.ssl.certPath)) {
-      console.error('\n❌ SSL certificates not found!');
-      console.error('   Key:  ', config.ssl.keyPath);
-      console.error('   Cert: ', config.ssl.certPath);
-      console.error('\n📝 Run: npm run generate-certs\n');
-      process.exit(1);
+    let server;
+    const useHTTPS = process.env.USE_HTTPS !== 'false' && config.server.env === 'development';
+
+    if (useHTTPS) {
+      // Local development with HTTPS
+      // Check if SSL certificates exist
+      if (!fs.existsSync(config.ssl.keyPath) || !fs.existsSync(config.ssl.certPath)) {
+        console.error('\n❌ SSL certificates not found!');
+        console.error('   Key:  ', config.ssl.keyPath);
+        console.error('   Cert: ', config.ssl.certPath);
+        console.error('\n📝 Run: npm run generate-certs\n');
+        process.exit(1);
+      }
+
+      // Load SSL certificates
+      const httpsOptions = {
+        key: fs.readFileSync(config.ssl.keyPath),
+        cert: fs.readFileSync(config.ssl.certPath),
+      };
+
+      // Create HTTPS server
+      server = https.createServer(httpsOptions, app);
+    } else {
+      // Production/Cloud with HTTP (SSL termination handled by platform)
+      server = http.createServer(app);
     }
-
-    // Load SSL certificates
-    const httpsOptions = {
-      key: fs.readFileSync(config.ssl.keyPath),
-      cert: fs.readFileSync(config.ssl.certPath),
-    };
-
-    // Create HTTPS server
-    const server = https.createServer(httpsOptions, app);
 
     // Start listening
     server.listen(config.server.port, config.server.host, () => {
-      console.log('\n🚀 HTTPS Weight Server Started Successfully!\n');
+      const protocol = useHTTPS ? 'https' : 'http';
+      const sslStatus = useHTTPS ? 'Enabled (Self-signed)' : 'Disabled (Platform SSL termination)';
+
+      console.log(`\n🚀 ${useHTTPS ? 'HTTPS' : 'HTTP'} Weight Server Started Successfully!\n`);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(`📡 Server:        https://localhost:${config.server.port}`);
-      console.log(`🌍 Network:       https://<YOUR_IP>:${config.server.port}`);
-      console.log(`🔒 SSL:           Enabled (Self-signed)`);
+      console.log(`📡 Server:        ${protocol}://localhost:${config.server.port}`);
+      console.log(`🌍 Network:       ${protocol}://<YOUR_IP>:${config.server.port}`);
+      console.log(`🔒 SSL:           ${sslStatus}`);
       console.log(`📊 Environment:   ${config.server.env}`);
       console.log(`📁 Logs:          ${config.logging.directory}`);
       console.log(`💾 Data:          ${config.data.file}`);
@@ -268,8 +282,8 @@ function startServer() {
       console.log(`   GET    /stats       - Get statistics`);
       console.log(`   GET    /log-files   - List log files`);
       console.log('\n💡 ESP32 Configuration:');
-      console.log(`   Server IP: <YOUR_PC_IP>`);
-      console.log(`   Port: ${config.server.port}`);
+      console.log(`   Server URL: ${process.env.RENDER_EXTERNAL_URL || '<YOUR_PC_IP or RENDER_URL>'}`);
+      console.log(`   Port: ${useHTTPS ? config.server.port : '443 (HTTPS)'}`);
       console.log(`   Endpoint: /weight`);
       console.log(`   Method: POST`);
       console.log(`   Payload: {"weight": <number>}`);
@@ -278,6 +292,7 @@ function startServer() {
       logger.info('Server started', {
         port: config.server.port,
         env: config.server.env,
+        protocol: protocol,
       });
     });
 

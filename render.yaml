@@ -1,0 +1,30 @@
+services:
+  # HTTPS Weight Server for ESP32/ESP8266
+  - type: web
+    name: shoppad-weight-server
+    env: node
+    region: oregon  # Change to your preferred region (oregon, frankfurt, singapore, etc.)
+    plan: free  # free tier
+    branch: main  # Deploy from main branch
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: USE_HTTPS
+        value: false  # Render.com handles SSL termination
+      - key: PORT
+        value: 10000  # Render.com default port (will be overridden by platform)
+      - key: HOST
+        value: 0.0.0.0
+      - key: LOG_RETENTION_DAYS
+        value: 30
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 1000  # Increased for production
+      - key: MAX_DATA_ENTRIES
+        value: 50000  # Increased for production
+      - key: ALLOWED_ORIGINS
+        generateValue: true  # Will be set manually in Render dashboard
+    healthCheckPath: /status
+    autoDeploy: true  # Auto-deploy on git push
+

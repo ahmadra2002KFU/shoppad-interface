@@ -5,6 +5,117 @@ All notable changes to the ShopPad Interface project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-10-20
+
+### ✅ Real-Time Mode Release
+
+Near real-time weight updates with 100ms intervals (10 updates per second).
+Optimized for live weight display with minimal latency.
+
+### Added - Real-Time Features
+
+#### ESP32 Optimizations
+- **100ms transmission interval** (reduced from 10 seconds)
+- **Keep-alive connections** to reduce reconnection overhead
+- **Reduced logging** for better performance in real-time mode
+- **Faster timeouts** (1 second instead of 5 seconds)
+- **Optimized weight reading** (3 samples instead of 10)
+- **Connection reuse** for efficient data transmission
+
+#### Frontend Optimizations
+- **100ms polling interval** (reduced from 3 seconds)
+- **Faster timeout** (2 seconds instead of 5 seconds)
+- **30x faster updates** for near real-time display
+
+#### Server Optimizations
+- **Increased rate limit** to 1000 requests/minute (from 100)
+- **Support for high-frequency updates** (16.6 req/sec)
+
+### Changed
+- ESP32 send interval: 10s → 100ms (100x faster)
+- Frontend poll interval: 3s → 100ms (30x faster)
+- Server rate limit: 100 → 1000 requests/minute
+- Connection mode: close → keep-alive
+- Weight reading samples: 10 → 3 (for speed)
+- Response timeout: 5s → 1s (ESP32), 5s → 2s (Frontend)
+
+### Performance
+- **Updates per second:** 10
+- **Total latency:** 20-250ms (sensor to display)
+- **Network usage:** ~2 KB/s, ~170 MB/day
+- **Data points per day:** 864,000
+
+### Documentation
+- Complete real-time mode guide (REALTIME_MODE.md)
+- Performance metrics and tuning options
+- Troubleshooting guide for real-time issues
+- Data storage considerations
+- Future WebSocket implementation notes
+
+---
+
+## [1.2.0] - 2025-10-20
+
+### ✅ Production Deployment Release
+
+Complete deployment package for DigitalOcean Droplet with automated scripts,
+comprehensive documentation, and production-ready configuration.
+
+### Added - Production Deployment
+
+#### Deployment Documentation
+- Complete DigitalOcean deployment guide (DIGITALOCEAN_DEPLOYMENT.md)
+- Step-by-step deployment checklist (DEPLOYMENT_CHECKLIST.md)
+- Production configuration guide for ESP32 (PRODUCTION_CONFIG.h)
+- Nginx reverse proxy configuration template
+- Production environment template (.env.production)
+
+#### Deployment Scripts
+- Automated deployment script (deploy.sh)
+  - System updates and dependency installation
+  - Node.js, Git, PM2, Nginx, Certbot setup
+  - Repository cloning and configuration
+  - Firewall configuration
+  - PM2 process management
+- Production start script (production-start.sh)
+  - Quick production startup
+  - PM2 process management
+  - Environment configuration
+
+#### Production Features
+- PM2 process manager integration
+- Nginx reverse proxy support
+- Let's Encrypt SSL certificate support
+- Production environment variables
+- Enhanced security configuration
+- Automated startup on server reboot
+- Log management and rotation
+- Backup and restore procedures
+
+#### Package.json Scripts
+- `npm run deploy` - Run full deployment
+- `npm run prod:start` - Start in production mode
+- `npm run prod:stop` - Stop production server
+- `npm run prod:restart` - Restart production server
+- `npm run prod:logs` - View production logs
+- `npm run prod:status` - Check production status
+
+### Changed
+- Updated server configuration for production deployment
+- Enhanced CORS configuration for production domains
+- Updated rate limiting for production (60 requests/minute)
+- Increased max data entries to 50,000 for production
+
+### Documentation
+- Complete deployment guide with 13 detailed steps
+- Troubleshooting section for common deployment issues
+- Monitoring and maintenance procedures
+- Backup and recovery strategies
+- Security best practices
+- Performance optimization tips
+
+---
+
 ## [1.1.0] - 2025-10-20
 
 ### ✅ Frontend Integration Release

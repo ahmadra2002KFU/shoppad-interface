@@ -44,8 +44,8 @@
 const char* WIFI_SSID = "ABC";
 const char* WIFI_PASSWORD = "ahmad123";
 
-// Server configuration
-const char* SERVER_HOST = "10.232.200.83";  // Your laptop's IP address
+// Server configuration - PRODUCTION (DigitalOcean Droplet)
+const char* SERVER_HOST = "138.68.137.154";  // Your DigitalOcean Droplet IP
 const int SERVER_PORT = 5050;
 const char* SERVER_ENDPOINT = "/weight";
 
@@ -53,8 +53,8 @@ const char* SERVER_ENDPOINT = "/weight";
 const int LOADCELL_DOUT_PIN = 16;
 const int LOADCELL_SCK_PIN = 4;
 
-// Timing configuration
-const unsigned long SEND_INTERVAL = 10000;  // 10 seconds in milliseconds
+// Timing configuration - REAL-TIME MODE
+const unsigned long SEND_INTERVAL = 100;  // 0.1 seconds (100ms) for near real-time
 const unsigned long WIFI_RETRY_INTERVAL = 5000;  // 5 seconds
 
 // Weight sensor calibration
@@ -213,15 +213,15 @@ void connectToWiFi() {
 // ============================================================================
 
 float getWeight() {
-  if (scale.wait_ready_timeout(1000)) {
-    float weight = scale.get_units(10);  // Average of 10 readings
+  if (scale.wait_ready_timeout(100)) {  // Reduced timeout for real-time
+    float weight = scale.get_units(3);  // Reduced from 10 to 3 readings for speed
 
     // Round to 2 decimal places
     weight = round(weight * 100.0) / 100.0;
 
     return weight;
   } else {
-    Serial.println("❌ HX711 not ready!");
+    // Don't print error in real-time mode (too much spam)
     return 0.0;
   }
 }
@@ -231,24 +231,20 @@ float getWeight() {
 // ============================================================================
 
 bool sendWeightData(float weight) {
-  Serial.println("\n📤 Sending weight data to server...");
-  Serial.print("   Weight: ");
+  // Reduced logging for real-time mode (only print weight)
+  Serial.print("📤 ");
   Serial.print(weight, 2);
-  Serial.println(" kg");
+  Serial.print(" kg");
 
-  // Connect to server
-  Serial.print("   Connecting to ");
-  Serial.print(SERVER_HOST);
-  Serial.print(":");
-  Serial.print(SERVER_PORT);
-  Serial.println("...");
-
-  if (!client.connect(SERVER_HOST, SERVER_PORT)) {
-    Serial.println("❌ Connection to server failed!");
-    return false;
+  // Check if connection is still alive, reconnect if needed
+  if (!client.connected()) {
+    Serial.print(" [Reconnecting...] ");
+    if (!client.connect(SERVER_HOST, SERVER_PORT)) {
+      Serial.println(" ❌ Failed!");
+      return false;
+    }
+    Serial.print(" ✅ ");
   }
-
-  Serial.println("✅ Connected to server");
 
   // Create JSON payload
   StaticJsonDocument<200> doc;
@@ -257,51 +253,45 @@ bool sendWeightData(float weight) {
   String jsonPayload;
   serializeJson(doc, jsonPayload);
 
-  // Build HTTP POST request
+  // Build HTTP POST request with keep-alive for faster subsequent requests
   String request = String("POST ") + SERVER_ENDPOINT + " HTTP/1.1\r\n" +
                    "Host: " + SERVER_HOST + "\r\n" +
                    "Content-Type: application/json\r\n" +
                    "Content-Length: " + jsonPayload.length() + "\r\n" +
-                   "Connection: close\r\n\r\n" +
+                   "Connection: keep-alive\r\n\r\n" +
                    jsonPayload;
 
   // Send request
   client.print(request);
-  Serial.println("   Request sent");
 
-  // Wait for response
+  // Wait for response (reduced timeout for real-time)
   unsigned long timeout = millis();
   while (client.available() == 0) {
-    if (millis() - timeout > 5000) {
-      Serial.println("❌ Server response timeout!");
+    if (millis() - timeout > 1000) {  // Reduced from 5000ms to 1000ms
+      Serial.println(" ❌ Timeout!");
       client.stop();
       return false;
     }
-    delay(10);
+    delay(1);  // Reduced delay
   }
 
-  // Read response
+  // Read response quickly
   bool success = false;
-  String response = "";
-
   while (client.available()) {
     String line = client.readStringUntil('\n');
-    response += line + "\n";
-
     // Check for success in response
     if (line.indexOf("\"success\":true") > 0 || line.indexOf("\"success\": true") > 0) {
       success = true;
     }
   }
 
-  client.stop();
+  // Don't close connection - keep it alive for next request
+  // client.stop();  // COMMENTED OUT for keep-alive
 
   if (success) {
-    Serial.println("✅ Data sent successfully!");
+    Serial.println(" ✅");
   } else {
-    Serial.println("⚠️  Server returned error or unexpected response");
-    Serial.println("   Response preview:");
-    Serial.println(response.substring(0, 200));
+    Serial.println(" ⚠️");
   }
 
   return success;

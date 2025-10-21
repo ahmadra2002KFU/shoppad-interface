@@ -17,6 +17,8 @@ const config = {
     port: parseInt(process.env.PORT || '5050', 10),
     host: process.env.HOST || '0.0.0.0',
     env: process.env.NODE_ENV || 'development',
+    // Render.com provides RENDER_EXTERNAL_URL
+    externalUrl: process.env.RENDER_EXTERNAL_URL || null,
   },
 
   // SSL/TLS settings
@@ -32,10 +34,10 @@ const config = {
     format: process.env.NODE_ENV === 'production' ? 'combined' : 'dev',
   },
 
-  // Security settings
+  // Security settings - REAL-TIME MODE (increased limits)
   security: {
     rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
-    rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+    rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000', 10), // Increased from 100 to 1000 for real-time
   },
 
   // CORS settings
