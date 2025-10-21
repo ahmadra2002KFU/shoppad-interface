@@ -58,7 +58,14 @@ const unsigned long SEND_INTERVAL = 100;  // 0.1 seconds (100ms) for near real-t
 const unsigned long WIFI_RETRY_INTERVAL = 5000;  // 5 seconds
 
 // Weight sensor calibration
-const float CALIBRATION_FACTOR = 10.0;  // Adjust based on your calibration
+// NEGATIVE value because load cell is reading inverted
+// Based on: -0.54 kg reading for actual 445g (0.445 kg)
+// Ratio: 0.54 / 0.445 = 1.213
+// New factor: -3268.3 / 1.213 = -2694
+const float CALIBRATION_FACTOR = -2694.0;  // Negative to invert the reading
+// NOTE: Fine-tune this value if readings are still off
+// If reading too high: decrease this number (more negative)
+// If reading too low: increase this number (less negative)
 
 // ============================================================================
 // GLOBAL OBJECTS
@@ -319,9 +326,16 @@ void printStatus() {
   Serial.print(millis() / 1000);
   Serial.println(" seconds");
 
-  Serial.print("Next send in: ");
-  Serial.print((SEND_INTERVAL - (millis() - lastSendTime)) / 1000);
-  Serial.println(" seconds");
+  // Fixed timer calculation to prevent overflow
+  unsigned long currentTime = millis();
+  unsigned long timeSinceLastSend = currentTime - lastSendTime;
+  if (timeSinceLastSend < SEND_INTERVAL) {
+    Serial.print("Next send in: ");
+    Serial.print((SEND_INTERVAL - timeSinceLastSend) / 1000.0, 1);
+    Serial.println(" seconds");
+  } else {
+    Serial.println("Next send: Now");
+  }
 
   Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 }

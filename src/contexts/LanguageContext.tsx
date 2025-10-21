@@ -31,6 +31,18 @@ const translations = {
     // Scanner
     scanBarcode: "Scan Barcode",
     scanQRCode: "Scan QR Code",
+    scanningQRCode: "Scanning for QR code...",
+    qrCodeScanned: "QR code scanned successfully!",
+    qrScanInstructions: "Position the QR code within the frame",
+    scanningBarcode: "Scanning for barcode...",
+    barcodeScanned: "Barcode scanned successfully!",
+    barcodeScanInstructions: "Position the barcode within the frame",
+    invalidBarcode: "Invalid Barcode",
+    productNotFound: "Product Not Found",
+    cancel: "Cancel",
+    invalidQRCode: "Invalid QR Code",
+    productAdded: "Product Added",
+    weightMismatch: "Weight Mismatch",
     
     // Cart
     cart: "Cart",
@@ -91,6 +103,18 @@ const translations = {
     // Scanner
     scanBarcode: "مسح الباركود",
     scanQRCode: "مسح رمز الاستجابة",
+    scanningQRCode: "جاري البحث عن رمز الاستجابة...",
+    qrCodeScanned: "تم مسح رمز الاستجابة بنجاح!",
+    qrScanInstructions: "ضع رمز الاستجابة داخل الإطار",
+    scanningBarcode: "جاري البحث عن الباركود...",
+    barcodeScanned: "تم مسح الباركود بنجاح!",
+    barcodeScanInstructions: "ضع الباركود داخل الإطار",
+    invalidBarcode: "باركود غير صالح",
+    productNotFound: "المنتج غير موجود",
+    cancel: "إلغاء",
+    invalidQRCode: "رمز استجابة غير صالح",
+    productAdded: "تمت إضافة المنتج",
+    weightMismatch: "عدم تطابق الوزن",
     
     // Cart
     cart: "السلة",

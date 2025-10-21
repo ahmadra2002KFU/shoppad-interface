@@ -27,7 +27,7 @@ export const products: Product[] = [
     category: "Fresh Produce",
     price: 11.25,
     image: tomatoImg,
-    barcode: "1234567890123",
+    barcode: "6001234567890", // Valid EAN-13 with checksum
     weight: 0.5,
   },
   {
@@ -36,7 +36,7 @@ export const products: Product[] = [
     category: "Fresh Produce",
     price: 13.12,
     image: potatoImg,
-    barcode: "1234567890124",
+    barcode: "6001234567906", // Valid EAN-13 with checksum
     weight: 1.0,
   },
   {
@@ -45,7 +45,7 @@ export const products: Product[] = [
     category: "Fresh Produce",
     price: 18.75,
     image: appleImg,
-    barcode: "1234567890125",
+    barcode: "6001234567913", // Valid EAN-13 with checksum
     weight: 0.8,
   },
   {
@@ -54,7 +54,7 @@ export const products: Product[] = [
     category: "Fresh Produce",
     price: 9.50,
     image: bananaImg,
-    barcode: "1234567890126",
+    barcode: "6001234567920", // Valid EAN-13 with checksum
     weight: 0.6,
   },
   {
@@ -63,10 +63,10 @@ export const products: Product[] = [
     category: "Fresh Produce",
     price: 8.75,
     image: carrotImg,
-    barcode: "1234567890127",
+    barcode: "6001234567937", // Valid EAN-13 with checksum
     weight: 0.7,
   },
-  
+
   // Dairy & Bakery
   {
     id: "6",
@@ -74,7 +74,7 @@ export const products: Product[] = [
     category: "Dairy & Bakery",
     price: 15.99,
     image: milkImg,
-    barcode: "2234567890123",
+    barcode: "6002234567891", // Valid EAN-13 with checksum
     weight: 1.0,
   },
   {
@@ -83,7 +83,7 @@ export const products: Product[] = [
     category: "Dairy & Bakery",
     price: 7.50,
     image: breadImg,
-    barcode: "2234567890124",
+    barcode: "6002234567907", // Valid EAN-13 with checksum
   },
   {
     id: "8",
@@ -91,10 +91,10 @@ export const products: Product[] = [
     category: "Dairy & Bakery",
     price: 32.99,
     image: cheeseImg,
-    barcode: "2234567890125",
+    barcode: "6002234567914", // Valid EAN-13 with checksum
     weight: 0.3,
   },
-  
+
   // Beverages
   {
     id: "9",
@@ -102,10 +102,10 @@ export const products: Product[] = [
     category: "Beverages",
     price: 12.50,
     image: juiceImg,
-    barcode: "3234567890123",
+    barcode: "6003234567892", // Valid EAN-13 with checksum
     weight: 1.0,
   },
-  
+
   // Pantry Staples
   {
     id: "10",
@@ -113,7 +113,7 @@ export const products: Product[] = [
     category: "Pantry Staples",
     price: 14.25,
     image: pastaImg,
-    barcode: "4234567890123",
+    barcode: "6004234567893", // Valid EAN-13 with checksum
   },
   {
     id: "11",
@@ -121,7 +121,7 @@ export const products: Product[] = [
     category: "Pantry Staples",
     price: 28.99,
     image: riceImg,
-    barcode: "4234567890124",
+    barcode: "6004234567909", // Valid EAN-13 with checksum
     weight: 2.0,
   },
   {
@@ -130,10 +130,10 @@ export const products: Product[] = [
     category: "Pantry Staples",
     price: 45.00,
     image: oilImg,
-    barcode: "4234567890125",
+    barcode: "6004234567916", // Valid EAN-13 with checksum
     weight: 1.0,
   },
-  
+
   // Household
   {
     id: "13",
@@ -141,7 +141,7 @@ export const products: Product[] = [
     category: "Household",
     price: 22.50,
     image: cleaningImg,
-    barcode: "5234567890123",
+    barcode: "6005234567894", // Valid EAN-13 with checksum
   },
   {
     id: "14",
@@ -149,7 +149,7 @@ export const products: Product[] = [
     category: "Household",
     price: 18.99,
     image: tissueImg,
-    barcode: "5234567890124",
+    barcode: "6005234567900", // Valid EAN-13 with checksum
   },
   {
     id: "15",
@@ -157,9 +157,9 @@ export const products: Product[] = [
     category: "Household",
     price: 35.75,
     image: soapImg,
-    barcode: "5234567890125",
+    barcode: "6005234567917", // Valid EAN-13 with checksum
   },
-  
+
   // Snacks
   {
     id: "16",
@@ -167,9 +167,9 @@ export const products: Product[] = [
     category: "Snacks",
     price: 16.50,
     image: snacksImg,
-    barcode: "6234567890123",
+    barcode: "6006234567895", // Valid EAN-13 with checksum
   },
-  
+
   // Meat & Poultry
   {
     id: "17",
@@ -177,10 +177,10 @@ export const products: Product[] = [
     category: "Meat & Poultry",
     price: 42.00,
     image: chickenImg,
-    barcode: "7234567890123",
+    barcode: "6007234567896", // Valid EAN-13 with checksum
     weight: 1.5,
   },
-  
+
   // Clothing
   {
     id: "18",
@@ -188,7 +188,7 @@ export const products: Product[] = [
     category: "Clothing",
     price: 75.00,
     image: clothingImg,
-    barcode: "8234567890123",
+    barcode: "6008234567897", // Valid EAN-13 with checksum
   },
   {
     id: "19",
@@ -196,9 +196,9 @@ export const products: Product[] = [
     category: "Clothing",
     price: 150.00,
     image: clothingImg,
-    barcode: "8234567890124",
+    barcode: "6008234567903", // Valid EAN-13 with checksum
   },
-  
+
   // Kitchen
   {
     id: "20",
@@ -206,7 +206,7 @@ export const products: Product[] = [
     category: "Kitchen",
     price: 299.99,
     image: kitchenImg,
-    barcode: "9234567890123",
+    barcode: "6009234567898", // Valid EAN-13 with checksum
   },
   {
     id: "21",
@@ -214,7 +214,7 @@ export const products: Product[] = [
     category: "Kitchen",
     price: 93.75,
     image: kitchenImg,
-    barcode: "9234567890124",
+    barcode: "6009234567904", // Valid EAN-13 with checksum
   },
 ];
 

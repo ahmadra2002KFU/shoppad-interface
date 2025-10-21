@@ -85,8 +85,11 @@ The system enables real-time weight monitoring and data transmission from IoT de
 - ✅ **Live sensor data with auto-polling (3s interval)**
 - ✅ **Visual status indicators (Live/Offline)**
 - ✅ **Comparison with calculated cart weight**
+- ✅ **QR Code Scanner** - Camera-based product scanning
+- ✅ **Automatic product addition** via QR codes
+- ✅ **Weight validation** (optional) against sensor readings
 - ✅ Multi-language support (EN/AR)
-- ✅ Responsive design
+- ✅ Responsive design (desktop & mobile)
 
 ---
 
@@ -710,14 +713,82 @@ shoppad-interface/
 │
 ├── src/                      # React Frontend
 │   ├── components/           # UI components
+│   │   ├── QRScanner.tsx     # QR code scanner component
+│   │   └── ...
 │   ├── contexts/             # React contexts
+│   ├── hooks/                # Custom React hooks
+│   │   ├── useQRScanner.ts   # QR scanner hook
+│   │   └── ...
+│   ├── utils/                # Utility functions
+│   │   ├── qrCodeParser.ts   # QR code parsing
+│   │   └── ...
+│   ├── types/                # TypeScript types
+│   │   ├── qrcode.ts         # QR code types
+│   │   └── ...
 │   ├── pages/                # Page components
 │   └── ...
 │
+├── QR_CODE_INTEGRATION.md    # QR code feature documentation
+├── QR_CODE_TESTING_GUIDE.md  # QR code testing guide
+├── QR_CODE_SAMPLES.md        # Sample QR codes
+├── QR_CODE_DEPLOYMENT.md     # Deployment guide
+├── QR_CODE_QUICKSTART.md     # Quick start guide
 ├── CHANGELOG.md              # Project changelog
 ├── README.md                 # This file
 └── package.json              # Frontend dependencies
 ```
+
+---
+
+## 📱 QR Code Scanner
+
+### **Overview**
+
+The QR code scanner allows customers to scan product QR codes using their device camera to automatically add products to the shopping cart.
+
+### **Features**
+
+- ✅ Camera-based scanning (desktop & mobile)
+- ✅ Real-time QR detection (10 FPS)
+- ✅ Automatic product addition to cart
+- ✅ Visual and audio feedback
+- ✅ Optional weight validation with ESP32 sensor
+- ✅ Multi-language support (EN/AR)
+- ✅ Mobile-responsive design
+
+### **Quick Start**
+
+1. **Open the app:** `http://138.68.137.154:8080/`
+2. **Click "Scan QR Code"** button
+3. **Allow camera access** when prompted
+4. **Scan a product QR code**
+5. **Product automatically added** to cart
+
+### **QR Code Format**
+
+QR codes must contain product data in JSON format:
+
+```json
+{
+  "id": "1",
+  "name": "Fresh Tomatoes",
+  "price": 11.25,
+  "category": "Fresh Produce",
+  "weight": 0.5,
+  "barcode": "1234567890123"
+}
+```
+
+**Required fields:** `id`, `name`, `price`
+**Optional fields:** `category`, `weight`, `barcode`, `image`
+
+### **Documentation**
+
+- **Complete Guide:** [QR_CODE_INTEGRATION.md](QR_CODE_INTEGRATION.md)
+- **Testing Guide:** [QR_CODE_TESTING_GUIDE.md](QR_CODE_TESTING_GUIDE.md)
+- **Sample QR Codes:** [QR_CODE_SAMPLES.md](QR_CODE_SAMPLES.md)
+- **Deployment:** [QR_CODE_DEPLOYMENT.md](QR_CODE_DEPLOYMENT.md)
+- **Quick Start:** [QR_CODE_QUICKSTART.md](QR_CODE_QUICKSTART.md)
 
 ---
 
