@@ -8,15 +8,89 @@ import { WeeklyOffers } from "@/components/WeeklyOffers";
 import { StoreMap } from "@/components/StoreMap";
 import { ScannerPlaceholder } from "@/components/ScannerPlaceholder";
 import { WeightDisplay } from "@/components/WeightDisplay";
+import { NFCCheckoutDialog } from "@/components/NFCCheckoutDialog";
 import { products, categories } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
+import { useNFCDetection } from "@/hooks/useNFCDetection";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 const Shopping = () => {
-  const { totalItems, currentWeight } = useCart();
+  const { totalItems, currentWeight, clearCart } = useCart();
   const { language, toggleLanguage, t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [showFailureDialog, setShowFailureDialog] = useState(false);
+  const [currentNFCEvent, setCurrentNFCEvent] = useState<{ uid: string; timestamp: string } | null>(null);
+
+  // NFC Detection Hook
+  const { nfcEvent, markAsProcessed } = useNFCDetection({
+    enabled: true,
+    pollInterval: 1000, // Check every second
+    onNFCDetected: (event) => {
+      // Only show dialog if cart has items
+      if (totalItems > 0) {
+        console.log('NFC detected:', event);
+        toast.info(t("nfcDetected"));
+        setCurrentNFCEvent({ uid: event.uid, timestamp: event.timestamp });
+        setShowCheckoutDialog(true);
+      } else {
+        // Cart is empty, mark as processed immediately
+        markAsProcessed(event.uid, event.timestamp);
+        toast.warning(t("cartEmpty"));
+      }
+    },
+  });
+
+  const handleCheckoutConfirm = async () => {
+    setShowCheckoutDialog(false);
+
+    // Simulate payment processing
+    // In a real app, this would call a payment API
+    const isSuccess = Math.random() > 0.1; // 90% success rate
+
+    if (isSuccess) {
+      setShowSuccessDialog(true);
+
+      // Mark NFC event as processed
+      if (currentNFCEvent) {
+        await markAsProcessed(currentNFCEvent.uid, currentNFCEvent.timestamp);
+      }
+
+      // Clear cart after 3 seconds
+      setTimeout(() => {
+        setShowSuccessDialog(false);
+        clearCart();
+        setCurrentNFCEvent(null);
+      }, 3000);
+    } else {
+      setShowFailureDialog(true);
+    }
+  };
+
+  const handleCheckoutCancel = async () => {
+    setShowCheckoutDialog(false);
+
+    // Mark NFC event as processed
+    if (currentNFCEvent) {
+      await markAsProcessed(currentNFCEvent.uid, currentNFCEvent.timestamp);
+      setCurrentNFCEvent(null);
+    }
+
+    toast.info(t("checkoutCancelled"));
+  };
+
+  const handleFailureClose = async () => {
+    setShowFailureDialog(false);
+
+    // Mark NFC event as processed
+    if (currentNFCEvent) {
+      await markAsProcessed(currentNFCEvent.uid, currentNFCEvent.timestamp);
+      setCurrentNFCEvent(null);
+    }
+  };
 
   const filteredProducts = selectedCategory
     ? products.filter((p) => p.category === selectedCategory)
@@ -109,6 +183,16 @@ const Shopping = () => {
       </main>
 
       <WeightDisplay calculatedWeight={currentWeight} />
+
+      {/* NFC Checkout Dialog */}
+      <NFCCheckoutDialog
+        isOpen={showCheckoutDialog}
+        onConfirm={handleCheckoutConfirm}
+        onCancel={handleCheckoutCancel}
+        showSuccess={showSuccessDialog}
+        showFailure={showFailureDialog}
+        onFailureClose={handleFailureClose}
+      />
     </div>
   );
 };

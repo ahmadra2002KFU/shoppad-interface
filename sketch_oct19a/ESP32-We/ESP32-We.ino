@@ -1,25 +1,29 @@
 /**
- * ESP32/ESP8266 Weight Sensor with HTTPS Communication
+ * ESP32/ESP8266 Weight Sensor with HTTPS Communication and RFID RC522 NFC Payment
  *
  * Hardware:
  * - ESP32 or ESP8266 board
  * - HX711 Load Cell Amplifier
  * - Load Cell (weight sensor)
+ * - RFID RC522 Module (NFC reader)
  *
  * Features:
  * - WiFi connectivity with auto-reconnection
  * - HTTPS communication with server
- * - 10-second data transmission interval
+ * - Real-time weight data transmission (100ms interval)
+ * - RFID RC522 NFC detection for payment trigger
  * - Raw numeric weight data
  * - Error handling and recovery
  * - Status monitoring via Serial
  *
  * Author: ShopPad Team
- * Version: 1.0.0
- * Date: 2025-10-20
+ * Version: 1.6.0
+ * Date: 2025-10-21
  */
 
 #include <HX711.h>
+#include <SPI.h>
+#include <MFRC522.h>
 
 // Determine board type and include appropriate libraries
 #if defined(ESP32)
@@ -53,9 +57,19 @@ const char* SERVER_ENDPOINT = "/weight";
 const int LOADCELL_DOUT_PIN = 16;
 const int LOADCELL_SCK_PIN = 4;
 
+// RFID RC522 pins (SPI)
+const int RFID_SS_PIN = 5;     // SDA/SS pin
+const int RFID_RST_PIN = 27;   // RST pin
+const int RFID_VCC_PIN = 33;   // Power supply pin (3.3V output)
+// SPI pins (default for ESP32):
+// MOSI = GPIO 23
+// MISO = GPIO 19
+// SCK = GPIO 18
+
 // Timing configuration - REAL-TIME MODE
 const unsigned long SEND_INTERVAL = 100;  // 0.1 seconds (100ms) for near real-time
 const unsigned long WIFI_RETRY_INTERVAL = 5000;  // 5 seconds
+const unsigned long NFC_CHECK_INTERVAL = 500;  // Check for NFC every 500ms
 
 // Weight sensor calibration
 // NEGATIVE value because load cell is reading inverted
@@ -72,10 +86,14 @@ const float CALIBRATION_FACTOR = -2694.0;  // Negative to invert the reading
 // ============================================================================
 
 HX711 scale;
+MFRC522 rfid(RFID_SS_PIN, RFID_RST_PIN);
 WiFiClientSecure client;
 unsigned long lastSendTime = 0;
 unsigned long lastWiFiCheck = 0;
+unsigned long lastNFCCheck = 0;
 int reconnectAttempts = 0;
+bool nfcDetected = false;
+String lastNFCUID = "";
 
 // ============================================================================
 // FUNCTION DECLARATIONS
@@ -83,8 +101,11 @@ int reconnectAttempts = 0;
 
 void connectToWiFi();
 bool sendWeightData(float weight);
+bool sendNFCEvent(String uid);
 float getWeight();
 void printStatus();
+void checkNFC();
+String getNFCUID();
 
 // ============================================================================
 // SETUP
@@ -98,12 +119,39 @@ void setup() {
   Serial.println("\n\n");
   Serial.println("╔════════════════════════════════════════════════════════╗");
   Serial.println("║   ESP32/ESP8266 Weight Sensor - HTTPS Client          ║");
-  Serial.println("║   Version: 1.0.0                                       ║");
+  Serial.println("║   Version: 1.6.0                                       ║");
   Serial.println("╚════════════════════════════════════════════════════════╝");
   Serial.println();
   Serial.print("Board Type: ");
   Serial.println(BOARD_TYPE);
   Serial.println();
+
+  // Configure GPIO 33 as power supply for RFID module
+  Serial.println("🔧 Configuring GPIO 33 as RFID power supply...");
+  pinMode(RFID_VCC_PIN, OUTPUT);
+  digitalWrite(RFID_VCC_PIN, HIGH);  // Set to 3.3V
+  delay(100);  // Allow power to stabilize
+  Serial.println("✅ GPIO 33 set to HIGH (3.3V) for RFID power");
+
+  // Initialize SPI for RFID
+  Serial.println("🔧 Initializing SPI for RFID...");
+  SPI.begin();
+
+  // Initialize RFID RC522
+  Serial.println("🔧 Initializing RFID RC522...");
+  rfid.PCD_Init();
+  delay(100);
+
+  // Check RFID module
+  byte version = rfid.PCD_ReadRegister(rfid.VersionReg);
+  if (version == 0x00 || version == 0xFF) {
+    Serial.println("❌ RFID RC522 initialization failed!");
+    Serial.println("   Check wiring and connections");
+  } else {
+    Serial.println("✅ RFID RC522 initialized successfully");
+    Serial.print("   Firmware Version: 0x");
+    Serial.println(version, HEX);
+  }
 
   // Initialize HX711
   Serial.println("🔧 Initializing HX711 load cell...");
@@ -149,6 +197,12 @@ void loop() {
       Serial.println("⚠️  WiFi disconnected! Attempting to reconnect...");
       connectToWiFi();
     }
+  }
+
+  // Check for NFC detection at specified interval
+  if (currentTime - lastNFCCheck >= NFC_CHECK_INTERVAL) {
+    lastNFCCheck = currentTime;
+    checkNFC();
   }
 
   // Send weight data at specified interval
@@ -338,5 +392,130 @@ void printStatus() {
   }
 
   Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+}
+
+// ============================================================================
+// NFC DETECTION
+// ============================================================================
+
+void checkNFC() {
+  // Reset the loop if no new card present on the sensor/reader
+  if (!rfid.PICC_IsNewCardPresent()) {
+    return;
+  }
+
+  // Verify if the NUID has been read
+  if (!rfid.PICC_ReadCardSerial()) {
+    return;
+  }
+
+  // Get the UID
+  String uid = getNFCUID();
+
+  // Check if this is a new card (different from last detected)
+  if (uid != lastNFCUID) {
+    lastNFCUID = uid;
+    nfcDetected = true;
+
+    Serial.println("\n🔔 NFC CARD DETECTED!");
+    Serial.print("   UID: ");
+    Serial.println(uid);
+
+    // Send NFC event to server
+    if (WiFi.status() == WL_CONNECTED) {
+      bool success = sendNFCEvent(uid);
+      if (success) {
+        Serial.println("✅ NFC event sent to server");
+      } else {
+        Serial.println("❌ Failed to send NFC event");
+      }
+    } else {
+      Serial.println("❌ Cannot send NFC event - WiFi not connected");
+    }
+  }
+
+  // Halt PICC
+  rfid.PICC_HaltA();
+
+  // Stop encryption on PCD
+  rfid.PCD_StopCrypto1();
+}
+
+String getNFCUID() {
+  String uid = "";
+  for (byte i = 0; i < rfid.uid.size; i++) {
+    if (rfid.uid.uidByte[i] < 0x10) {
+      uid += "0";
+    }
+    uid += String(rfid.uid.uidByte[i], HEX);
+  }
+  uid.toUpperCase();
+  return uid;
+}
+
+// ============================================================================
+// SEND NFC EVENT
+// ============================================================================
+
+bool sendNFCEvent(String uid) {
+  Serial.print("📤 Sending NFC event... ");
+
+  // Check if connection is still alive, reconnect if needed
+  if (!client.connected()) {
+    Serial.print(" [Reconnecting...] ");
+    if (!client.connect(SERVER_HOST, SERVER_PORT)) {
+      Serial.println(" ❌ Failed!");
+      return false;
+    }
+    Serial.print(" ✅ ");
+  }
+
+  // Create JSON payload
+  StaticJsonDocument<200> doc;
+  doc["nfc_uid"] = uid;
+  doc["event"] = "nfc_detected";
+  doc["timestamp"] = millis();
+
+  String jsonPayload;
+  serializeJson(doc, jsonPayload);
+
+  // Build HTTP POST request with keep-alive
+  String request = String("POST /nfc HTTP/1.1\r\n") +
+                   "Host: " + SERVER_HOST + "\r\n" +
+                   "Content-Type: application/json\r\n" +
+                   "Content-Length: " + jsonPayload.length() + "\r\n" +
+                   "Connection: keep-alive\r\n\r\n" +
+                   jsonPayload;
+
+  // Send request
+  client.print(request);
+
+  // Wait for response with timeout
+  unsigned long timeout = millis();
+  while (client.available() == 0) {
+    if (millis() - timeout > 1000) {  // 1 second timeout
+      Serial.println(" ❌ Timeout!");
+      return false;
+    }
+    delay(1);
+  }
+
+  // Read response status line
+  String statusLine = client.readStringUntil('\n');
+  bool success = statusLine.indexOf("200") > 0 || statusLine.indexOf("201") > 0;
+
+  // Discard remaining response
+  while (client.available()) {
+    client.read();
+  }
+
+  if (success) {
+    Serial.println(" ✅");
+  } else {
+    Serial.print(" ❌ Server error: ");
+    Serial.println(statusLine);
+  }
+
+  return success;
 }
 

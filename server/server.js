@@ -155,6 +155,135 @@ app.post('/weight', (req, res) => {
   }
 });
 
+// Store NFC events in memory (for real-time polling)
+let nfcEvents = [];
+const MAX_NFC_EVENTS = 100;
+
+// Receive NFC detection event from ESP32
+app.post('/nfc', (req, res) => {
+  try {
+    const nfcData = req.body;
+
+    logger.debug('Received NFC event', nfcData);
+
+    // Validate NFC data
+    if (!nfcData || typeof nfcData !== 'object') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid NFC data format',
+      });
+    }
+
+    if (!nfcData.nfc_uid || typeof nfcData.nfc_uid !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'NFC UID is required',
+      });
+    }
+
+    // Create NFC event
+    const nfcEvent = {
+      uid: nfcData.nfc_uid,
+      event: nfcData.event || 'nfc_detected',
+      timestamp: new Date().toISOString(),
+      deviceId: req.ip,
+      processed: false,
+    };
+
+    // Add to events array
+    nfcEvents.push(nfcEvent);
+
+    // Keep only the most recent events
+    if (nfcEvents.length > MAX_NFC_EVENTS) {
+      nfcEvents = nfcEvents.slice(-MAX_NFC_EVENTS);
+    }
+
+    logger.info('NFC event received', { uid: nfcEvent.uid, event: nfcEvent.event });
+
+    res.json({
+      success: true,
+      message: 'NFC event received',
+      uid: nfcEvent.uid,
+      timestamp: nfcEvent.timestamp,
+    });
+
+  } catch (error) {
+    logger.error('Error processing NFC event', { error: error.message, stack: error.stack });
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
+  }
+});
+
+// Get recent NFC events (for frontend polling)
+app.get('/nfc', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const unprocessedOnly = req.query.unprocessed === 'true';
+
+    let events = nfcEvents;
+
+    // Filter unprocessed events if requested
+    if (unprocessedOnly) {
+      events = events.filter(event => !event.processed);
+    }
+
+    // Get most recent events
+    const recentEvents = events.slice(-limit);
+
+    res.json({
+      success: true,
+      count: recentEvents.length,
+      data: recentEvents,
+    });
+  } catch (error) {
+    logger.error('Error retrieving NFC events', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve NFC events',
+    });
+  }
+});
+
+// Mark NFC event as processed
+app.post('/nfc/mark-processed', (req, res) => {
+  try {
+    const { uid, timestamp } = req.body;
+
+    if (!uid || !timestamp) {
+      return res.status(400).json({
+        success: false,
+        error: 'UID and timestamp are required',
+      });
+    }
+
+    // Find and mark the event as processed
+    const event = nfcEvents.find(e => e.uid === uid && e.timestamp === timestamp);
+
+    if (event) {
+      event.processed = true;
+      logger.info('NFC event marked as processed', { uid, timestamp });
+
+      res.json({
+        success: true,
+        message: 'Event marked as processed',
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'Event not found',
+      });
+    }
+  } catch (error) {
+    logger.error('Error marking NFC event as processed', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
+  }
+});
+
 // Get recent weight readings
 app.get('/logs', (req, res) => {
   try {
@@ -276,17 +405,21 @@ function startServer() {
       console.log(`💾 Data:          ${config.data.file}`);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('\n📋 Available Endpoints:');
-      console.log(`   POST   /weight      - Receive weight data from ESP32`);
-      console.log(`   GET    /status      - Server health check`);
-      console.log(`   GET    /logs        - Get recent weight readings`);
-      console.log(`   GET    /stats       - Get statistics`);
-      console.log(`   GET    /log-files   - List log files`);
+      console.log(`   POST   /weight              - Receive weight data from ESP32`);
+      console.log(`   POST   /nfc                 - Receive NFC detection event from ESP32`);
+      console.log(`   GET    /nfc                 - Get recent NFC events`);
+      console.log(`   POST   /nfc/mark-processed  - Mark NFC event as processed`);
+      console.log(`   GET    /status              - Server health check`);
+      console.log(`   GET    /logs                - Get recent weight readings`);
+      console.log(`   GET    /stats               - Get statistics`);
+      console.log(`   GET    /log-files           - List log files`);
       console.log('\n💡 ESP32 Configuration:');
       console.log(`   Server URL: ${process.env.RENDER_EXTERNAL_URL || '<YOUR_PC_IP or RENDER_URL>'}`);
       console.log(`   Port: ${useHTTPS ? config.server.port : '443 (HTTPS)'}`);
-      console.log(`   Endpoint: /weight`);
-      console.log(`   Method: POST`);
-      console.log(`   Payload: {"weight": <number>}`);
+      console.log(`   Weight Endpoint: /weight (POST)`);
+      console.log(`   Weight Payload: {"weight": <number>}`);
+      console.log(`   NFC Endpoint: /nfc (POST)`);
+      console.log(`   NFC Payload: {"nfc_uid": "<uid>", "event": "nfc_detected"}`);
       console.log('\n⌨️  Press Ctrl+C to stop the server\n');
 
       logger.info('Server started', {

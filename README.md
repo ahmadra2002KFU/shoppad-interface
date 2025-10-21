@@ -86,7 +86,8 @@ The system enables real-time weight monitoring and data transmission from IoT de
 - ✅ **Visual status indicators (Live/Offline)**
 - ✅ **Comparison with calculated cart weight**
 - ✅ **QR Code Scanner** - Camera-based product scanning
-- ✅ **Automatic product addition** via QR codes
+- ✅ **Barcode Scanner** - Multi-format barcode scanning (EAN-13, UPC-A, Code-128)
+- ✅ **Automatic product addition** via QR codes and barcodes
 - ✅ **Weight validation** (optional) against sensor readings
 - ✅ Multi-language support (EN/AR)
 - ✅ Responsive design (desktop & mobile)
@@ -789,6 +790,93 @@ QR codes must contain product data in JSON format:
 - **Sample QR Codes:** [QR_CODE_SAMPLES.md](QR_CODE_SAMPLES.md)
 - **Deployment:** [QR_CODE_DEPLOYMENT.md](QR_CODE_DEPLOYMENT.md)
 - **Quick Start:** [QR_CODE_QUICKSTART.md](QR_CODE_QUICKSTART.md)
+
+---
+
+## 📊 Barcode Scanner
+
+### **Overview**
+
+The barcode scanner allows customers to scan product barcodes using their device camera to automatically add products to the shopping cart. Supports multiple barcode formats including EAN-13, UPC-A, Code-128, and more.
+
+### **Features**
+
+- ✅ Camera-based scanning (desktop & mobile)
+- ✅ Multi-format support (EAN-13, UPC-A, Code-128, Code-39, ITF, Codabar)
+- ✅ Real-time barcode detection (10+ FPS)
+- ✅ Automatic product addition to cart
+- ✅ Visual and audio feedback
+- ✅ Barcode validation with checksum verification
+- ✅ Optional weight validation with ESP32 sensor
+- ✅ Multi-language support (EN/AR)
+- ✅ Mobile-responsive with back camera preference
+- ✅ Duplicate scan prevention
+
+### **Quick Start**
+
+1. **Open the app:** `http://138.68.137.154:8080/`
+2. **Click "Scan Barcode"** button
+3. **Allow camera access** when prompted
+4. **Scan a product barcode** (hold 15-30cm from camera)
+5. **Product automatically added** to cart
+
+### **Supported Barcode Formats**
+
+| Format | Description | Example |
+|--------|-------------|---------|
+| **EAN-13** | European Article Number (13 digits) | `6001234567890` |
+| **UPC-A** | Universal Product Code (12 digits) | `012345678905` |
+| **EAN-8** | European Article Number (8 digits) | `12345670` |
+| **Code-128** | High-density linear barcode | Various |
+| **Code-39** | Alphanumeric barcode | Various |
+| **ITF** | Interleaved 2 of 5 | Various |
+| **Codabar** | Numeric barcode | Various |
+
+### **Product Barcodes**
+
+All 21 ShopPad products have valid EAN-13 barcodes with proper checksums:
+
+| Product | Barcode | Category |
+|---------|---------|----------|
+| Fresh Tomatoes | `6001234567890` | Fresh Produce |
+| Organic Potatoes | `6001234567906` | Fresh Produce |
+| Red Apples | `6001234567913` | Fresh Produce |
+| Fresh Bananas | `6001234567920` | Fresh Produce |
+| Fresh Carrots | `6001234567937` | Fresh Produce |
+| Fresh Milk | `6002234567891` | Dairy & Bakery |
+| Fresh Bread | `6002234567907` | Dairy & Bakery |
+| Cheese Selection | `6002234567914` | Dairy & Bakery |
+| Orange Juice | `6003234567892` | Beverages |
+| ... and 12 more | See BARCODE_SAMPLES.md | Various |
+
+**Complete list:** [BARCODE_SAMPLES.md](BARCODE_SAMPLES.md)
+
+### **Printing Barcodes**
+
+To print barcodes for testing:
+
+1. **Visit:** https://www.barcode-generator.org/
+2. **Select:** EAN-13
+3. **Enter:** Barcode number (e.g., `6001234567890`)
+4. **Download:** PNG or SVG format
+5. **Print:** At 300 DPI, minimum 3cm x 2cm size
+
+**Detailed instructions:** [BARCODE_SAMPLES.md](BARCODE_SAMPLES.md#printing-guidelines)
+
+### **Documentation**
+
+- **Complete Guide:** [BARCODE_INTEGRATION.md](BARCODE_INTEGRATION.md)
+- **Testing Guide:** [BARCODE_TESTING_GUIDE.md](BARCODE_TESTING_GUIDE.md)
+- **Sample Barcodes:** [BARCODE_SAMPLES.md](BARCODE_SAMPLES.md)
+- **Deployment:** [BARCODE_DEPLOYMENT.md](BARCODE_DEPLOYMENT.md)
+
+### **Technical Details**
+
+**Library:** @zxing/library (ZXing - "Zebra Crossing")
+**Detection Speed:** 10+ FPS
+**Camera:** Automatic back camera selection on mobile
+**Validation:** EAN-13 and UPC-A checksum verification
+**Bundle Size:** ~400 KB (gzipped: ~105 KB)
 
 ---
 

@@ -77,7 +77,16 @@ const translations = {
     paymentFailed: "Payment Failed",
     pleaseTryAgain: "Please try again or use another payment method",
     tryAgain: "Try Again",
-    
+
+    // NFC Checkout
+    nfcCheckoutTitle: "Ready to Checkout?",
+    nfcCheckoutMessage: "Are you ready to complete your purchase?",
+    nfcDetected: "NFC card detected",
+    cartEmpty: "Cart is empty - add items first",
+    checkoutCancelled: "Checkout cancelled",
+    yes: "Yes",
+    no: "No",
+
     // Toast messages
     barcodeScanner: "Barcode scanner activated",
     qrScanner: "QR Code scanner activated",
@@ -149,7 +158,16 @@ const translations = {
     paymentFailed: "فشلت عملية الدفع",
     pleaseTryAgain: "يرجى المحاولة مرة أخرى أو استخدام طريقة دفع أخرى",
     tryAgain: "حاول مرة أخرى",
-    
+
+    // NFC Checkout
+    nfcCheckoutTitle: "هل أنت مستعد للدفع؟",
+    nfcCheckoutMessage: "هل أنت مستعد لإتمام عملية الشراء؟",
+    nfcDetected: "تم اكتشاف بطاقة NFC",
+    cartEmpty: "السلة فارغة - أضف منتجات أولاً",
+    checkoutCancelled: "تم إلغاء عملية الدفع",
+    yes: "نعم",
+    no: "لا",
+
     // Toast messages
     barcodeScanner: "تم تفعيل ماسح الباركود",
     qrScanner: "تم تفعيل ماسح رمز الاستجابة",

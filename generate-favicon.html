@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Shopping Cart Favicon</title>
+</head>
+<body>
+    <h1>Shopping Cart Favicon Generator</h1>
+    <canvas id="canvas" width="64" height="64"></canvas>
+    <br><br>
+    <button onclick="downloadFavicon()">Download as ICO</button>
+    <br><br>
+    <p>Instructions:</p>
+    <ol>
+        <li>Click the "Download as ICO" button</li>
+        <li>Save the file as "favicon.ico"</li>
+        <li>Replace the existing favicon.ico in the public folder</li>
+    </ol>
+    <p>Or use this online tool: <a href="https://favicon.io/favicon-generator/" target="_blank">https://favicon.io/favicon-generator/</a></p>
+    <p>Settings for favicon.io:</p>
+    <ul>
+        <li>Text: 🛒 (shopping cart emoji)</li>
+        <li>Background: Rounded, #10b981 (green)</li>
+        <li>Font: Any bold font</li>
+    </ul>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Draw gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 64, 64);
+        gradient.addColorStop(0, '#10b981');
+        gradient.addColorStop(1, '#059669');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(32, 32, 30, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw shopping cart
+        ctx.strokeStyle = 'white';
+        ctx.fillStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Cart body
+        ctx.beginPath();
+        ctx.moveTo(20, 22);
+        ctx.lineTo(22, 34);
+        ctx.lineTo(44, 34);
+        ctx.lineTo(46, 22);
+        ctx.closePath();
+        ctx.fill();
+
+        // Cart handle
+        ctx.beginPath();
+        ctx.moveTo(18, 22);
+        ctx.lineTo(20, 22);
+        ctx.stroke();
+
+        // Cart wheels
+        ctx.beginPath();
+        ctx.arc(26, 40, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(40, 40, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cart items
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.6)';
+        ctx.fillRect(24, 25, 6, 6);
+        ctx.fillRect(32, 25, 6, 6);
+        
+        ctx.fillStyle = 'rgba(5, 150, 105, 0.8)';
+        ctx.fillRect(28, 27, 6, 4);
+
+        function downloadFavicon() {
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'favicon.png';
+                a.click();
+                URL.revokeObjectURL(url);
+                alert('PNG downloaded! For ICO format, please use https://favicon.io/favicon-converter/ to convert the PNG to ICO.');
+            });
+        }
+    </script>
+</body>
+</html>
+
