@@ -10,6 +10,15 @@ import cors from 'cors';
 import config from './config.js';
 import Logger from './logger.js';
 
+// Database and routes
+import db from './database/index.js';
+import { seed, needsSeeding } from './database/seed.js';
+import authRoutes from './routes/auth.js';
+import qrAuthRoutes from './routes/qr-auth.js';
+import productRoutes from './routes/products.js';
+import cartRoutes from './routes/cart.js';
+import checkoutRoutes from './routes/checkout.js';
+
 /**
  * Production-ready HTTPS/HTTP server for ESP32/ESP8266 weight data
  * Port: Configurable (default 5050 for local, dynamic for cloud)
@@ -19,6 +28,21 @@ import Logger from './logger.js';
 
 // Initialize logger
 const logger = new Logger(config);
+
+// Initialize database
+try {
+  db.init();
+  console.log('✅ Database initialized');
+
+  // Seed database if empty
+  if (needsSeeding()) {
+    seed();
+    console.log('✅ Database seeded with initial data');
+  }
+} catch (error) {
+  console.error('❌ Database initialization failed:', error.message);
+  process.exit(1);
+}
 
 // Initialize Express app
 const app = express();
@@ -340,6 +364,15 @@ app.get('/log-files', (req, res) => {
   }
 });
 
+/**
+ * API Routes (Database-backed)
+ */
+app.use('/auth', authRoutes);
+app.use('/auth/qr', qrAuthRoutes);
+app.use('/products', productRoutes);
+app.use('/cart', cartRoutes);
+app.use('/checkout', checkoutRoutes);
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -405,6 +438,7 @@ function startServer() {
       console.log(`💾 Data:          ${config.data.file}`);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('\n📋 Available Endpoints:');
+      console.log('   ESP32/IoT:');
       console.log(`   POST   /weight              - Receive weight data from ESP32`);
       console.log(`   POST   /nfc                 - Receive NFC detection event from ESP32`);
       console.log(`   GET    /nfc                 - Get recent NFC events`);
@@ -412,7 +446,17 @@ function startServer() {
       console.log(`   GET    /status              - Server health check`);
       console.log(`   GET    /logs                - Get recent weight readings`);
       console.log(`   GET    /stats               - Get statistics`);
-      console.log(`   GET    /log-files           - List log files`);
+      console.log('   API (Database):');
+      console.log(`   POST   /auth/register       - Register new user`);
+      console.log(`   POST   /auth/login          - Login user`);
+      console.log(`   GET    /auth/me             - Get current user`);
+      console.log(`   POST   /auth/qr/session     - Create QR login session`);
+      console.log(`   GET    /auth/qr/status/:id  - Poll QR session status`);
+      console.log(`   POST   /auth/qr/authorize   - Authorize QR session (phone)`);
+      console.log(`   GET    /products            - List products`);
+      console.log(`   GET    /cart                - Get user cart`);
+      console.log(`   POST   /cart                - Add item to cart`);
+      console.log(`   POST   /checkout            - Process checkout`);
       console.log('\n💡 ESP32 Configuration:');
       console.log(`   Server URL: ${process.env.RENDER_EXTERNAL_URL || '<YOUR_PC_IP or RENDER_URL>'}`);
       console.log(`   Port: ${useHTTPS ? config.server.port : '443 (HTTPS)'}`);

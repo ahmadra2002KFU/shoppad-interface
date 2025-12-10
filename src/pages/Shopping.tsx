@@ -1,7 +1,17 @@
 import { useState } from "react";
-import { ShoppingCart, Languages } from "lucide-react";
+import { ShoppingCart, Languages, QrCode, User, LogIn, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { ProductCard } from "@/components/ProductCard";
 import { CartView } from "@/components/CartView";
 import { WeeklyOffers } from "@/components/WeeklyOffers";
@@ -19,6 +29,7 @@ import { toast } from "sonner";
 const Shopping = () => {
   const { totalItems, currentWeight, clearCart } = useCart();
   const { language, toggleLanguage, t } = useLanguage();
+  const { user, isAuthenticated, logout } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -111,14 +122,58 @@ const Shopping = () => {
                   {totalItems} {t("items")}
                 </Badge>
               )}
-              <Button 
-                variant="outline" 
+              <Link to="/qr-codes">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  title="View Product QR Codes"
+                >
+                  <QrCode className="w-5 h-5" />
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
                 size="icon"
                 onClick={toggleLanguage}
                 className="shrink-0"
               >
                 <Languages className="w-5 h-5" />
               </Button>
+              {isAuthenticated ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="shrink-0">
+                      <User className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>
+                      {user?.name || (language === 'ar' ? 'حسابي' : 'My Account')}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
+                        <Settings className="w-4 h-4" />
+                        {language === 'ar' ? 'الإعدادات' : 'Settings'}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={logout}
+                      className="text-destructive cursor-pointer"
+                    >
+                      {language === 'ar' ? 'تسجيل الخروج' : 'Logout'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link to="/login">
+                  <Button variant="outline" size="icon" className="shrink-0">
+                    <LogIn className="w-5 h-5" />
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
