@@ -11,8 +11,8 @@ RUN apk add --no-cache python3 make g++ openssl
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with legacy peer deps flag
-RUN npm ci --only=production --legacy-peer-deps
+# Install dependencies (using npm install for flexibility)
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Copy source code
 COPY . .
