@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import Shopping from "./pages/Shopping";
+import PrintBarcodes from "./pages/PrintBarcodes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Shopping />} />
+              <Route path="/print-barcodes" element={<PrintBarcodes />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

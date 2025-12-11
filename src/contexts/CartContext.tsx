@@ -1,21 +1,25 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { CartItem, Product } from "@/types/product";
+import { getProductByBarcode } from "@/services/productService";
 
 interface CartContextType {
   cart: CartItem[];
   addToCart: (product: Product) => void;
+  addToCartByBarcode: (barcode: string) => Promise<{ success: boolean; product?: Product; error?: string }>;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
   currentWeight: number;
+  isLoading: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const addToCart = (product: Product) => {
     setCart((prev) => {
@@ -47,6 +51,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCart([]);
   };
 
+  // Add product to cart by scanning barcode
+  const addToCartByBarcode = useCallback(async (barcode: string): Promise<{ success: boolean; product?: Product; error?: string }> => {
+    setIsLoading(true);
+    try {
+      const product = await getProductByBarcode(barcode);
+
+      if (!product) {
+        return { success: false, error: `Product not found for barcode: ${barcode}` };
+      }
+
+      addToCart(product);
+      return { success: true, product };
+    } catch (error) {
+      console.error('Error adding product by barcode:', error);
+      return { success: false, error: 'Failed to lookup product' };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const currentWeight = cart.reduce((sum, item) => sum + (item.weight || 0) * item.quantity, 0);
@@ -56,12 +80,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{
         cart,
         addToCart,
+        addToCartByBarcode,
         removeFromCart,
         updateQuantity,
         clearCart,
         totalItems,
         totalPrice,
         currentWeight,
+        isLoading,
       }}
     >
       {children}
