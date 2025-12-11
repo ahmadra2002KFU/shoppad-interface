@@ -34,9 +34,9 @@ USER nodejs
 # Expose port
 EXPOSE 5050
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:5050/status || exit 1
+# Health check - increased start-period for npm install time
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD wget -qO- http://localhost:5050/status || exit 1
 
 # Environment defaults
 ENV NODE_ENV=production \
