@@ -1,15 +1,18 @@
 # Backend Dockerfile for ShopPad Server
 # Optimized for Coolify deployment
 
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
+
+# Install build dependencies for better-sqlite3 (native module)
+RUN apk add --no-cache python3 make g++ openssl
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies with legacy peer deps flag
+RUN npm ci --only=production --legacy-peer-deps
 
 # Copy source code
 COPY . .
@@ -18,20 +21,8 @@ COPY . .
 RUN mkdir -p logs data ssl
 
 # Generate self-signed certificates for fallback (Coolify handles SSL termination)
-RUN apk add --no-cache openssl && \
-    openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem \
+RUN openssl req -x509 -newkey rsa:2048 -keyout ssl/key.pem -out ssl/cert.pem \
     -days 365 -nodes -subj "/CN=localhost" 2>/dev/null || true
-
-# Production image
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Install runtime dependencies for better-sqlite3
-RUN apk add --no-cache python3 make g++
-
-# Copy from builder
-COPY --from=builder /app /app
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
