@@ -1,5 +1,5 @@
 /**
- * ESP32/ESP8266 Weight Sensor with HTTPS Communication and RFID RC522 NFC Payment
+ * ESP32/ESP8266 Weight Sensor with HTTPS Communication and RFID RC522 NFC Auto-Payment
  *
  * Hardware:
  * - ESP32 or ESP8266 board
@@ -11,14 +11,18 @@
  * - WiFi connectivity with auto-reconnection
  * - HTTPS communication with server
  * - Real-time weight data transmission (100ms interval)
- * - RFID RC522 NFC detection for payment trigger
+ * - RFID RC522 NFC detection for AUTO-PAYMENT trigger
  * - Raw numeric weight data
  * - Error handling and recovery
  * - Status monitoring via Serial
  *
+ * Payment Methods:
+ * 1. NFC Card: Tap NFC card to auto-pay (card must be linked to user account)
+ * 2. Phone: User can pay manually via phone app
+ *
  * Author: ShopPad Team
- * Version: 1.6.0
- * Date: 2025-10-21
+ * Version: 2.0.0
+ * Date: 2025-12-11
  */
 
 #include <HX711.h>
@@ -101,6 +105,7 @@ String lastNFCUID = "";
 
 void connectToWiFi();
 bool sendWeightData(float weight);
+bool sendNFCPayment(String uid);
 bool sendNFCEvent(String uid);
 float getWeight();
 void printStatus();
@@ -118,12 +123,16 @@ void setup() {
 
   Serial.println("\n\n");
   Serial.println("╔════════════════════════════════════════════════════════╗");
-  Serial.println("║   ESP32/ESP8266 Weight Sensor - HTTPS Client          ║");
-  Serial.println("║   Version: 1.6.0                                       ║");
+  Serial.println("║   ESP32/ESP8266 Weight Sensor + NFC Auto-Payment      ║");
+  Serial.println("║   Version: 2.0.0                                       ║");
   Serial.println("╚════════════════════════════════════════════════════════╝");
   Serial.println();
   Serial.print("Board Type: ");
   Serial.println(BOARD_TYPE);
+  Serial.println();
+  Serial.println("Payment Methods:");
+  Serial.println("  1. NFC Card: Tap to auto-pay (requires linked account)");
+  Serial.println("  2. Phone App: Manual payment via smartphone");
   Serial.println();
 
   // Configure GPIO 33 as power supply for RFID module
@@ -395,7 +404,7 @@ void printStatus() {
 }
 
 // ============================================================================
-// NFC DETECTION
+// NFC DETECTION AND AUTO-PAYMENT
 // ============================================================================
 
 void checkNFC() {
@@ -417,20 +426,29 @@ void checkNFC() {
     lastNFCUID = uid;
     nfcDetected = true;
 
-    Serial.println("\n🔔 NFC CARD DETECTED!");
+    Serial.println("\n╔════════════════════════════════════════════════════════╗");
+    Serial.println("║              💳 NFC CARD DETECTED                       ║");
+    Serial.println("╚════════════════════════════════════════════════════════╝");
     Serial.print("   UID: ");
     Serial.println(uid);
+    Serial.println("   Triggering auto-payment...");
 
-    // Send NFC event to server
+    // Trigger auto-payment
     if (WiFi.status() == WL_CONNECTED) {
-      bool success = sendNFCEvent(uid);
-      if (success) {
-        Serial.println("✅ NFC event sent to server");
+      bool paymentSuccess = sendNFCPayment(uid);
+
+      if (paymentSuccess) {
+        Serial.println("╔════════════════════════════════════════════════════════╗");
+        Serial.println("║         ✅ PAYMENT SUCCESSFUL!                         ║");
+        Serial.println("╚════════════════════════════════════════════════════════╝");
       } else {
-        Serial.println("❌ Failed to send NFC event");
+        Serial.println("⚠️  Payment failed or card not linked");
+        Serial.println("   Falling back to notification mode...");
+        // Send as regular NFC event for frontend handling
+        sendNFCEvent(uid);
       }
     } else {
-      Serial.println("❌ Cannot send NFC event - WiFi not connected");
+      Serial.println("❌ Cannot process payment - WiFi not connected");
     }
   }
 
@@ -454,11 +472,100 @@ String getNFCUID() {
 }
 
 // ============================================================================
-// SEND NFC EVENT
+// SEND NFC PAYMENT (AUTO-PAYMENT)
+// ============================================================================
+
+bool sendNFCPayment(String uid) {
+  Serial.print("💳 Sending NFC payment request... ");
+
+  // Check if connection is still alive, reconnect if needed
+  if (!client.connected()) {
+    Serial.print(" [Reconnecting...] ");
+    if (!client.connect(SERVER_HOST, SERVER_PORT)) {
+      Serial.println(" ❌ Connection failed!");
+      return false;
+    }
+    Serial.print(" ✅ ");
+  }
+
+  // Create JSON payload
+  StaticJsonDocument<200> doc;
+  doc["nfc_uid"] = uid;
+
+  String jsonPayload;
+  serializeJson(doc, jsonPayload);
+
+  // Build HTTP POST request to NFC payment endpoint
+  String request = String("POST /nfc/payment HTTP/1.1\r\n") +
+                   "Host: " + SERVER_HOST + "\r\n" +
+                   "Content-Type: application/json\r\n" +
+                   "Content-Length: " + jsonPayload.length() + "\r\n" +
+                   "Connection: keep-alive\r\n\r\n" +
+                   jsonPayload;
+
+  // Send request
+  client.print(request);
+
+  // Wait for response with timeout
+  unsigned long timeout = millis();
+  while (client.available() == 0) {
+    if (millis() - timeout > 3000) {  // 3 second timeout for payment
+      Serial.println(" ❌ Timeout!");
+      return false;
+    }
+    delay(10);
+  }
+
+  // Read and parse response
+  bool success = false;
+  String statusLine = "";
+  String responseBody = "";
+  bool readingHeaders = true;
+  int contentLength = 0;
+
+  // Read status line
+  statusLine = client.readStringUntil('\n');
+
+  // Check HTTP status code
+  if (statusLine.indexOf("200") > 0) {
+    success = true;
+    Serial.println(" ✅ Payment processed!");
+  } else if (statusLine.indexOf("402") > 0) {
+    Serial.println(" ⚠️ Payment failed!");
+  } else if (statusLine.indexOf("404") > 0) {
+    Serial.println(" ⚠️ Card not linked!");
+  } else if (statusLine.indexOf("400") > 0) {
+    Serial.println(" ⚠️ Cart empty or invalid request!");
+  } else {
+    Serial.print(" ❌ HTTP Error: ");
+    Serial.println(statusLine);
+  }
+
+  // Read remaining response headers and body
+  while (client.available()) {
+    String line = client.readStringUntil('\n');
+    // Look for success in response body
+    if (line.indexOf("\"success\":true") > 0 || line.indexOf("\"success\": true") > 0) {
+      success = true;
+    }
+    // Print payment details if found
+    if (line.indexOf("\"total\":") > 0) {
+      Serial.println("   " + line);
+    }
+    if (line.indexOf("\"userName\":") > 0) {
+      Serial.println("   " + line);
+    }
+  }
+
+  return success;
+}
+
+// ============================================================================
+// SEND NFC EVENT (FALLBACK NOTIFICATION)
 // ============================================================================
 
 bool sendNFCEvent(String uid) {
-  Serial.print("📤 Sending NFC event... ");
+  Serial.print("📤 Sending NFC notification... ");
 
   // Check if connection is still alive, reconnect if needed
   if (!client.connected()) {

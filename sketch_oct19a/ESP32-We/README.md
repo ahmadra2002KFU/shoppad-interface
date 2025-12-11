@@ -1,6 +1,21 @@
-# ESP32/ESP8266 Weight Sensor Firmware
+# ESP32/ESP8266 Weight Sensor + NFC Auto-Payment Firmware
 
-Production-ready firmware for ESP32/ESP8266 with HX711 load cell integration and HTTPS communication.
+Production-ready firmware for ESP32/ESP8266 with HX711 load cell integration, RFID RC522 NFC reader, and HTTPS communication for smart cart systems.
+
+## 💳 Payment Methods
+
+This firmware supports **two payment methods**:
+
+1. **NFC Card Payment (Auto-Pay)**
+   - User taps their linked NFC card on the reader
+   - System automatically processes payment
+   - Requires NFC card to be linked to user account
+   - Fastest checkout experience
+
+2. **Phone App Payment (Manual)**
+   - User completes checkout via smartphone app
+   - No hardware interaction required
+   - Works for any authenticated user
 
 ## 📋 Hardware Requirements
 
@@ -8,6 +23,7 @@ Production-ready firmware for ESP32/ESP8266 with HX711 load cell integration and
 - **ESP32** or **ESP8266** development board
 - **HX711** Load Cell Amplifier module
 - **Load Cell** (weight sensor) - any capacity
+- **RFID RC522** NFC reader module
 - **USB Cable** for programming
 - **Breadboard and jumper wires** (optional)
 
@@ -350,7 +366,13 @@ For issues:
 
 ---
 
-**Version:** 1.0.0  
-**Last Updated:** 2025-10-20  
+**Version:** 2.0.0
+**Last Updated:** 2025-12-11
 **Compatible with:** ESP32, ESP8266
+
+## 🔄 Version History
+
+- **v2.0.0** (2025-12-11): Added NFC auto-payment support, two payment methods
+- **v1.6.0** (2025-10-21): Added RFID RC522 NFC detection
+- **v1.0.0** (2025-10-20): Initial release with weight sensor
 

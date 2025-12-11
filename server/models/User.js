@@ -31,7 +31,7 @@ export class User {
    */
   static findById(id) {
     const stmt = db.get().prepare(`
-      SELECT id, name, phone, preferred_payment_id, created_at, updated_at
+      SELECT id, name, phone, preferred_payment_id, nfc_uid, created_at, updated_at
       FROM users WHERE id = ?
     `);
     return stmt.get(id);
@@ -122,5 +122,56 @@ export class User {
   static phoneExists(phone) {
     const stmt = db.get().prepare('SELECT 1 FROM users WHERE phone = ?');
     return !!stmt.get(phone);
+  }
+
+  /**
+   * Find user by NFC UID
+   */
+  static findByNfcUid(nfcUid) {
+    const stmt = db.get().prepare(`
+      SELECT id, name, phone, preferred_payment_id, nfc_uid, created_at, updated_at
+      FROM users WHERE nfc_uid = ?
+    `);
+    return stmt.get(nfcUid);
+  }
+
+  /**
+   * Link NFC card to user
+   */
+  static linkNfcCard(userId, nfcUid) {
+    // Check if NFC UID is already linked to another user
+    const existingUser = this.findByNfcUid(nfcUid);
+    if (existingUser && existingUser.id !== userId) {
+      throw new Error('NFC card already linked to another user');
+    }
+
+    const stmt = db.get().prepare(`
+      UPDATE users
+      SET nfc_uid = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `);
+    stmt.run(nfcUid, userId);
+    return this.findById(userId);
+  }
+
+  /**
+   * Unlink NFC card from user
+   */
+  static unlinkNfcCard(userId) {
+    const stmt = db.get().prepare(`
+      UPDATE users
+      SET nfc_uid = NULL, updated_at = datetime('now')
+      WHERE id = ?
+    `);
+    stmt.run(userId);
+    return this.findById(userId);
+  }
+
+  /**
+   * Check if NFC UID is linked to any user
+   */
+  static nfcUidExists(nfcUid) {
+    const stmt = db.get().prepare('SELECT 1 FROM users WHERE nfc_uid = ?');
+    return !!stmt.get(nfcUid);
   }
 }

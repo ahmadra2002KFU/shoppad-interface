@@ -219,4 +219,111 @@ router.post('/change-password', authMiddleware, (req, res) => {
   }
 });
 
+/**
+ * POST /auth/nfc/link
+ * Link NFC card to user account
+ */
+router.post('/nfc/link', authMiddleware, (req, res) => {
+  try {
+    const { nfcUid } = req.body;
+
+    if (!nfcUid || typeof nfcUid !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'NFC UID is required'
+      });
+    }
+
+    // Normalize NFC UID (uppercase, no spaces)
+    const normalizedUid = nfcUid.toUpperCase().replace(/\s/g, '');
+
+    // Check if already linked to another user
+    if (User.nfcUidExists(normalizedUid)) {
+      const existingUser = User.findByNfcUid(normalizedUid);
+      if (existingUser && existingUser.id !== req.user.userId) {
+        return res.status(409).json({
+          success: false,
+          error: 'This NFC card is already linked to another account'
+        });
+      }
+    }
+
+    const user = User.linkNfcCard(req.user.userId, normalizedUid);
+
+    console.log(`[Auth] NFC card linked: ${normalizedUid} -> User ${user.name} (${user.phone})`);
+
+    res.json({
+      success: true,
+      message: 'NFC card linked successfully',
+      data: {
+        nfcUid: normalizedUid,
+        userName: user.name
+      }
+    });
+  } catch (error) {
+    console.error('[Auth] NFC link error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to link NFC card'
+    });
+  }
+});
+
+/**
+ * DELETE /auth/nfc/unlink
+ * Unlink NFC card from user account
+ */
+router.delete('/nfc/unlink', authMiddleware, (req, res) => {
+  try {
+    const user = User.findById(req.user.userId);
+
+    if (!user.nfc_uid) {
+      return res.status(400).json({
+        success: false,
+        error: 'No NFC card linked to this account'
+      });
+    }
+
+    const oldNfcUid = user.nfc_uid;
+    User.unlinkNfcCard(req.user.userId);
+
+    console.log(`[Auth] NFC card unlinked: ${oldNfcUid} from User ${user.name}`);
+
+    res.json({
+      success: true,
+      message: 'NFC card unlinked successfully'
+    });
+  } catch (error) {
+    console.error('[Auth] NFC unlink error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to unlink NFC card'
+    });
+  }
+});
+
+/**
+ * GET /auth/nfc/status
+ * Check if user has NFC card linked
+ */
+router.get('/nfc/status', authMiddleware, (req, res) => {
+  try {
+    const user = User.findById(req.user.userId);
+
+    res.json({
+      success: true,
+      data: {
+        hasNfcLinked: !!user.nfc_uid,
+        nfcUid: user.nfc_uid ? user.nfc_uid.substring(0, 4) + '****' : null  // Partially masked
+      }
+    });
+  } catch (error) {
+    console.error('[Auth] NFC status error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get NFC status'
+    });
+  }
+});
+
 export default router;

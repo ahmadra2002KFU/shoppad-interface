@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   phone TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   preferred_payment_id TEXT,
+  nfc_uid TEXT UNIQUE,                              -- NFC card UID for auto-payment
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (preferred_payment_id) REFERENCES payment_methods(id)
@@ -93,6 +94,7 @@ CREATE TABLE IF NOT EXISTS qr_login_sessions (
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
+CREATE INDEX IF NOT EXISTS idx_users_nfc_uid ON users(nfc_uid);
 CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);

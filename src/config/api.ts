@@ -24,6 +24,14 @@ export const API_ENDPOINTS = {
   LOGS: '/logs',
   STATS: '/stats',
   LOG_FILES: '/log-files',
+  // NFC Endpoints
+  NFC: '/nfc',
+  NFC_PAYMENT: '/nfc/payment',
+  NFC_MARK_PROCESSED: '/nfc/mark-processed',
+  // Auth Endpoints
+  AUTH_NFC_LINK: '/auth/nfc/link',
+  AUTH_NFC_UNLINK: '/auth/nfc/unlink',
+  AUTH_NFC_STATUS: '/auth/nfc/status',
 };
 
 /**

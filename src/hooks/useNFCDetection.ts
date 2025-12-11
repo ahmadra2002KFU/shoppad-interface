@@ -7,6 +7,10 @@ interface NFCEvent {
   timestamp: string;
   deviceId?: string;
   processed: boolean;
+  // Payment-specific fields
+  transactionId?: string;
+  userName?: string;
+  total?: number;
 }
 
 interface NFCDetectionResponse {
@@ -15,11 +19,16 @@ interface NFCDetectionResponse {
   data: NFCEvent[];
 }
 
+// Payment event types
+export type NFCPaymentEventType = 'nfc_detected' | 'payment_success' | 'payment_failed';
+
 interface UseNFCDetectionOptions {
   pollInterval?: number; // in milliseconds, default 1000ms (1 second)
   serverUrl?: string; // default from API_CONFIG
   enabled?: boolean; // default true
   onNFCDetected?: (event: NFCEvent) => void; // callback when NFC is detected
+  onPaymentSuccess?: (event: NFCEvent) => void; // callback when NFC auto-payment succeeds
+  onPaymentFailed?: (event: NFCEvent) => void; // callback when NFC auto-payment fails
 }
 
 interface UseNFCDetectionReturn {
@@ -27,6 +36,7 @@ interface UseNFCDetectionReturn {
   isDetecting: boolean;
   isError: boolean;
   error: string | null;
+  lastPaymentEvent: NFCEvent | null; // Last payment event (success or failure)
   markAsProcessed: (uid: string, timestamp: string) => Promise<void>;
   refetch: () => Promise<void>;
 }
@@ -37,9 +47,12 @@ export function useNFCDetection(options: UseNFCDetectionOptions = {}): UseNFCDet
     serverUrl = API_CONFIG.SERVER_URL,
     enabled = true,
     onNFCDetected,
+    onPaymentSuccess,
+    onPaymentFailed,
   } = options;
 
   const [nfcEvent, setNfcEvent] = useState<NFCEvent | null>(null);
+  const [lastPaymentEvent, setLastPaymentEvent] = useState<NFCEvent | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +61,7 @@ export function useNFCDetection(options: UseNFCDetectionOptions = {}): UseNFCDet
   const fetchNFCEvents = useCallback(async () => {
     try {
       // Fetch unprocessed NFC events
-      const response = await fetch(`${serverUrl}/nfc?unprocessed=true&limit=1`, {
+      const response = await fetch(`${serverUrl}/nfc?unprocessed=true&limit=5`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -62,22 +75,39 @@ export function useNFCDetection(options: UseNFCDetectionOptions = {}): UseNFCDet
       const data: NFCDetectionResponse = await response.json();
 
       if (data.success && data.data && data.data.length > 0) {
-        const latestEvent = data.data[data.data.length - 1];
-        
-        // Only trigger if this is a new event (different timestamp)
-        if (latestEvent.timestamp !== lastProcessedTimestamp) {
-          setNfcEvent(latestEvent);
-          setIsError(false);
-          setError(null);
-          
-          // Call the callback if provided
-          if (onNFCDetected) {
-            onNFCDetected(latestEvent);
+        // Process all unprocessed events
+        for (const event of data.data) {
+          // Only trigger if this is a new event (different timestamp)
+          if (event.timestamp !== lastProcessedTimestamp) {
+            // Handle different event types
+            switch (event.event) {
+              case 'payment_success':
+                setLastPaymentEvent(event);
+                if (onPaymentSuccess) {
+                  onPaymentSuccess(event);
+                }
+                break;
+
+              case 'payment_failed':
+                setLastPaymentEvent(event);
+                if (onPaymentFailed) {
+                  onPaymentFailed(event);
+                }
+                break;
+
+              case 'nfc_detected':
+              default:
+                setNfcEvent(event);
+                if (onNFCDetected) {
+                  onNFCDetected(event);
+                }
+                break;
+            }
+
+            setIsError(false);
+            setError(null);
           }
         }
-      } else {
-        // No new NFC events
-        // Don't clear the current event, just don't update
       }
 
       setIsDetecting(false);
@@ -87,7 +117,7 @@ export function useNFCDetection(options: UseNFCDetectionOptions = {}): UseNFCDet
       setError(err instanceof Error ? err.message : 'Failed to fetch NFC events');
       setIsDetecting(false);
     }
-  }, [serverUrl, lastProcessedTimestamp, onNFCDetected]);
+  }, [serverUrl, lastProcessedTimestamp, onNFCDetected, onPaymentSuccess, onPaymentFailed]);
 
   const markAsProcessed = useCallback(async (uid: string, timestamp: string) => {
     try {
@@ -145,8 +175,12 @@ export function useNFCDetection(options: UseNFCDetectionOptions = {}): UseNFCDet
     isDetecting,
     isError,
     error,
+    lastPaymentEvent,
     markAsProcessed,
     refetch,
   };
 }
+
+// Export the NFCEvent type for use in other components
+export type { NFCEvent };
 

@@ -50,10 +50,34 @@ class DatabaseConnection {
     const schema = fs.readFileSync(schemaPath, 'utf8');
     this.db.exec(schema);
 
+    // Run migrations for existing databases
+    this.runMigrations();
+
     this.initialized = true;
     console.log('[Database] Initialized successfully');
 
     return this;
+  }
+
+  /**
+   * Run database migrations for existing databases
+   */
+  runMigrations() {
+    try {
+      // Check if nfc_uid column exists in users table
+      const columns = this.db.pragma('table_info(users)');
+      const hasNfcUid = columns.some(col => col.name === 'nfc_uid');
+
+      if (!hasNfcUid) {
+        console.log('[Database] Running migration: Adding nfc_uid column to users table');
+        this.db.exec('ALTER TABLE users ADD COLUMN nfc_uid TEXT UNIQUE');
+        this.db.exec('CREATE INDEX IF NOT EXISTS idx_users_nfc_uid ON users(nfc_uid)');
+        console.log('[Database] Migration completed: nfc_uid column added');
+      }
+    } catch (error) {
+      console.error('[Database] Migration error:', error.message);
+      // Don't throw - migrations should be non-blocking
+    }
   }
 
   /**

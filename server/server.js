@@ -19,6 +19,12 @@ import productRoutes from './routes/products.js';
 import cartRoutes from './routes/cart.js';
 import checkoutRoutes from './routes/checkout.js';
 
+// Models for NFC payment
+import { User } from './models/User.js';
+import { Cart } from './models/Cart.js';
+import { Transaction } from './models/Transaction.js';
+import { PaymentMethod } from './models/PaymentMethod.js';
+
 /**
  * Production-ready HTTPS/HTTP server for ESP32/ESP8266 weight data
  * Port: Configurable (default 5050 for local, dynamic for cloud)
@@ -308,6 +314,155 @@ app.post('/nfc/mark-processed', (req, res) => {
   }
 });
 
+// NFC Auto-Payment endpoint (called by ESP32 when NFC card is detected)
+// This triggers automatic checkout for the user linked to the NFC card
+app.post('/nfc/payment', (req, res) => {
+  try {
+    const { nfc_uid } = req.body;
+
+    logger.debug('NFC payment request received', { nfc_uid });
+
+    // Validate NFC UID
+    if (!nfc_uid || typeof nfc_uid !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'NFC UID is required',
+        code: 'MISSING_NFC_UID',
+      });
+    }
+
+    // Find user by NFC UID
+    const user = User.findByNfcUid(nfc_uid);
+
+    if (!user) {
+      logger.warn('NFC payment attempted with unlinked card', { nfc_uid });
+      return res.status(404).json({
+        success: false,
+        error: 'NFC card not linked to any user',
+        code: 'NFC_NOT_LINKED',
+      });
+    }
+
+    // Check if user has items in cart
+    if (!Cart.hasItems(user.id)) {
+      logger.info('NFC payment attempted with empty cart', { nfc_uid, userId: user.id });
+      return res.status(400).json({
+        success: false,
+        error: 'Cart is empty',
+        code: 'CART_EMPTY',
+      });
+    }
+
+    // Get user's preferred payment method or use NFC payment method
+    let paymentMethodId = user.preferred_payment_id;
+
+    // If no preferred payment method, use the first available one
+    if (!paymentMethodId) {
+      const methods = PaymentMethod.getAll();
+      if (methods.length > 0) {
+        paymentMethodId = methods[0].id;
+      } else {
+        return res.status(500).json({
+          success: false,
+          error: 'No payment methods available',
+          code: 'NO_PAYMENT_METHOD',
+        });
+      }
+    }
+
+    // Create transaction
+    const transaction = Transaction.create(user.id, paymentMethodId, nfc_uid);
+
+    // Process payment (simulated with 90% success rate)
+    const isSuccess = Math.random() > 0.1;
+
+    if (isSuccess) {
+      // Mark transaction as completed
+      Transaction.complete(transaction.id);
+
+      // Clear user's cart
+      Cart.clear(user.id);
+
+      const completedTransaction = Transaction.findById(transaction.id);
+
+      logger.info('NFC auto-payment successful', {
+        nfc_uid,
+        userId: user.id,
+        transactionId: transaction.id,
+        total: completedTransaction.total,
+      });
+
+      // Add to NFC events for frontend notification
+      const paymentEvent = {
+        uid: nfc_uid,
+        event: 'payment_success',
+        timestamp: new Date().toISOString(),
+        deviceId: req.ip,
+        processed: false,
+        transactionId: transaction.id,
+        userName: user.name,
+        total: completedTransaction.total,
+      };
+      nfcEvents.push(paymentEvent);
+      if (nfcEvents.length > MAX_NFC_EVENTS) {
+        nfcEvents = nfcEvents.slice(-MAX_NFC_EVENTS);
+      }
+
+      res.json({
+        success: true,
+        message: 'Payment successful',
+        data: {
+          transactionId: transaction.id,
+          total: completedTransaction.total,
+          userName: user.name,
+          status: 'completed',
+        },
+      });
+    } else {
+      // Mark transaction as failed
+      Transaction.fail(transaction.id);
+
+      logger.warn('NFC auto-payment failed', {
+        nfc_uid,
+        userId: user.id,
+        transactionId: transaction.id,
+      });
+
+      // Add failure event for frontend
+      const failureEvent = {
+        uid: nfc_uid,
+        event: 'payment_failed',
+        timestamp: new Date().toISOString(),
+        deviceId: req.ip,
+        processed: false,
+        transactionId: transaction.id,
+        userName: user.name,
+      };
+      nfcEvents.push(failureEvent);
+      if (nfcEvents.length > MAX_NFC_EVENTS) {
+        nfcEvents = nfcEvents.slice(-MAX_NFC_EVENTS);
+      }
+
+      res.status(402).json({
+        success: false,
+        error: 'Payment failed. Please try again.',
+        code: 'PAYMENT_FAILED',
+        data: {
+          transactionId: transaction.id,
+          userName: user.name,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('NFC payment error', { error: error.message, stack: error.stack });
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      code: 'SERVER_ERROR',
+    });
+  }
+});
+
 // Get recent weight readings
 app.get('/logs', (req, res) => {
   try {
@@ -441,6 +596,7 @@ function startServer() {
       console.log('   ESP32/IoT:');
       console.log(`   POST   /weight              - Receive weight data from ESP32`);
       console.log(`   POST   /nfc                 - Receive NFC detection event from ESP32`);
+      console.log(`   POST   /nfc/payment         - NFC auto-payment trigger (ESP32)`);
       console.log(`   GET    /nfc                 - Get recent NFC events`);
       console.log(`   POST   /nfc/mark-processed  - Mark NFC event as processed`);
       console.log(`   GET    /status              - Server health check`);
@@ -450,6 +606,9 @@ function startServer() {
       console.log(`   POST   /auth/register       - Register new user`);
       console.log(`   POST   /auth/login          - Login user`);
       console.log(`   GET    /auth/me             - Get current user`);
+      console.log(`   POST   /auth/nfc/link       - Link NFC card to user`);
+      console.log(`   DELETE /auth/nfc/unlink     - Unlink NFC card from user`);
+      console.log(`   GET    /auth/nfc/status     - Check NFC card link status`);
       console.log(`   POST   /auth/qr/session     - Create QR login session`);
       console.log(`   GET    /auth/qr/status/:id  - Poll QR session status`);
       console.log(`   POST   /auth/qr/authorize   - Authorize QR session (phone)`);
@@ -462,8 +621,11 @@ function startServer() {
       console.log(`   Port: ${useHTTPS ? config.server.port : '443 (HTTPS)'}`);
       console.log(`   Weight Endpoint: /weight (POST)`);
       console.log(`   Weight Payload: {"weight": <number>}`);
-      console.log(`   NFC Endpoint: /nfc (POST)`);
-      console.log(`   NFC Payload: {"nfc_uid": "<uid>", "event": "nfc_detected"}`);
+      console.log(`   NFC Payment Endpoint: /nfc/payment (POST)`);
+      console.log(`   NFC Payment Payload: {"nfc_uid": "<uid>"}`);
+      console.log('\n💳 Payment Methods:');
+      console.log('   1. NFC Card: Tap card → auto-payment (requires linked account)');
+      console.log('   2. Phone App: Manual checkout via smartphone');
       console.log('\n⌨️  Press Ctrl+C to stop the server\n');
 
       logger.info('Server started', {
