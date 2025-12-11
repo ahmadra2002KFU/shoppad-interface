@@ -52,9 +52,16 @@
 const char* WIFI_SSID = "ABC";
 const char* WIFI_PASSWORD = "ahmad123";
 
-// Server configuration - PRODUCTION (DigitalOcean Droplet)
-const char* SERVER_HOST = "138.68.137.154";  // Your DigitalOcean Droplet IP
-const int SERVER_PORT = 5050;
+// Server configuration
+// For local development: Use your PC's IP (e.g., "192.168.1.100")
+// For production: Use your deployed backend URL (without https://)
+// Examples:
+//   - Local: "192.168.1.100" with port 5050
+//   - Render: "your-app.onrender.com" with port 443
+//   - Railway: "your-app.up.railway.app" with port 443
+//   - Vercel API: Not supported (serverless - no persistent connections)
+const char* SERVER_HOST = "192.168.1.100";  // UPDATE THIS to your server IP/domain
+const int SERVER_PORT = 5050;               // Use 443 for cloud HTTPS deployments
 const char* SERVER_ENDPOINT = "/weight";
 
 // HX711 pins
