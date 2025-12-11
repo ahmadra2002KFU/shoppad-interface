@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Production-ready configuration for the HTTPS weight server
+ * Production-ready configuration for the ShopPad server
  */
 const config = {
   // Server settings
@@ -17,8 +17,28 @@ const config = {
     port: parseInt(process.env.PORT || '5050', 10),
     host: process.env.HOST || '0.0.0.0',
     env: process.env.NODE_ENV || 'development',
-    // Render.com provides RENDER_EXTERNAL_URL
-    externalUrl: process.env.RENDER_EXTERNAL_URL || null,
+    // Render.com provides RENDER_EXTERNAL_URL, Vercel provides VERCEL_URL
+    externalUrl: process.env.RENDER_EXTERNAL_URL || process.env.VERCEL_URL || null,
+  },
+
+  // Database settings
+  database: {
+    url: process.env.DATABASE_URL || null,
+    ssl: process.env.NODE_ENV === 'production',
+    maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10', 10),
+  },
+
+  // JWT settings
+  jwt: {
+    secret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
+  },
+
+  // Session settings
+  session: {
+    expiresInHours: parseInt(process.env.SESSION_EXPIRES_HOURS || '24', 10),
+    qrExpiresInMinutes: parseInt(process.env.QR_EXPIRES_MINUTES || '10', 10),
   },
 
   // SSL/TLS settings
